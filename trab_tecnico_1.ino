@@ -4,16 +4,22 @@
 #define bottonEsquerda 7
 #define bottonCima 5
 #define bottonBaixo 4
-byte byteCtrlL;
-byte byteCtrlH;
+
 unsigned long tempoAntigo = 0;
 unsigned long tempoAtual;
 uint8_t intervalo = 250;
-byte acaoAtual = B00000000;
-byte telaAtual = B00000000;
-byte estadoAtual = B00000000;
+uint16_t byteCtrl = 0x0000;
 
-void setup() {
+byte byteCtrlL = 0x00;
+uint16_t byteCtrlH = 0x0000;
+byte acaoAtual     = 0x00;
+byte telaAtual      = 0x00;
+byte estadoAtual = 0x00;
+byte estadoPorta = 0x00;
+byte alertaFumaca = 0x00;
+
+void setup()
+{
   Serial.begin(9600);
 
   pinMode(bottonMeio, INPUT);
@@ -21,10 +27,6 @@ void setup() {
   pinMode(bottonEsquerda, INPUT);
   pinMode(bottonCima, INPUT);
   pinMode(bottonBaixo, INPUT);
-
-  byteCtrlL = B00001000;
-  byteCtrlH = B00000001;
-  
 }
 void loop() {
   tempoAtual = millis();
@@ -32,71 +34,189 @@ void loop() {
   {
     tempoAntigo = tempoAtual;
   
-    if (digitalRead(bottonMeio) == HIGH)
-    {
-      byteCtrlL = byteCtrlL & B11111000;
-    }
-    if (digitalRead(bottonDireita) == HIGH)
-    {
-      byteCtrlL = byteCtrlL | B00000001;
-      byteCtrlL = byteCtrlL & B11111001;
-    }
-    if (digitalRead(bottonBaixo) == HIGH)
-    {
-      byteCtrlL = byteCtrlL | B00000010;
-      byteCtrlL = byteCtrlL & B11111010;
-    }
-    if (digitalRead(bottonEsquerda) == HIGH)
-    {
-      byteCtrlL = byteCtrlL | B00000011;
-      byteCtrlL = byteCtrlL & B11111011;
-    }
-    if (digitalRead(bottonCima) == HIGH)
-    {
-      byteCtrlL = byteCtrlL | B00000100;
-      byteCtrlL = byteCtrlL & B11111100;
-    }
-  }
+    if (digitalRead(bottonMeio) == HIGH) acaoAtual = 0x00;
+    if (digitalRead(bottonDireita) == HIGH) acaoAtual = 0x01
+    if (digitalRead(bottonBaixo) == HIGH) acaoAtual = 0x02
+    if (digitalRead(bottonEsquerda) == HIGH) acaoAtual = 0x03
+    if (digitalRead(bottonCima) == HIGH) acaoAtual = 0x04
 
+if (alertaFumaca == 0x01)
+{
+	telaAtual = 0x09;
+	delay(3000);
+} else 
+{
 
-  switch (telaAtual)
-  {
-    case B00000000:
-      delay(1000);
-      telaAtual = B00000001;
-      byteCtrlH = byteCtrlH | telaAtual;
-      byteCtrlH = byteCtrlH & B11110001;
-      break;
-    case B00000001:
-      byteCtrlL = byteCtrlL & B00001111;
-      if (byteCtrlL == B00000000) telaAtual = B00000010; 
-      byteCtrlH = byteCtrlH | telaAtual;
-      byteCtrlH = byteCtrlH & B11110010;
-      break;
-    case B00000010:
-      byteCtrlL = byteCtrlL & B00001111;
-      switch (byteCtrlL)
-      {
-        case B00000000:
-          telaAtual = B00000011; 
-          byteCtrlH = byteCtrlH | telaAtual;
-          byteCtrlH = byteCtrlH & B11110011;
-          break;
-        case B00000001;
-          estadoAtual = B00010000;
-          byteCtrlL = byteCtrlL & B00001111;
-          byteCtrlL = byteCtrlL | estadoAtual;
-          break;
-        case B00010000;
-          telaAtual = B00000100; 
-          byteCtrlH = byteCtrlH | telaAtual;
-          byteCtrlH = byteCtrlH & B11110100;
-          break;
-
-
-      }
-  }
-  
+	  switch (telaAtual)
+	  {
+	    case 0x00: // Tela atual
+	        delay(1000);
+	        telaAtual = 0x01;
+	        break;
+	    case 0x01: // Tela atual
+	        estadoAtual = 0x00
+	        if (acaoAtual == 0x00) telaAtual = 0x02; 
+	        break;
+	    case 0x02: // Tela atual
+	      switch (estadoAtual)
+	      {
+		  	case 0x00: // Estado atual
+			  	switch (acaoAtual)
+			      {
+			        case 0x00:
+			            telaAtual = 0x03; 
+			            break;
+			        case 0x01: 
+			            telaAtual = 0x03;
+			            break;
+			        case 0x02;
+			            estadoAtual = 0x01;
+			            break;
+			        case 0x04:
+			        	telaAtual = 0x01;
+			        	break;
+			        case 0x05:
+			        	estadoAtual = 0x02;
+			        	break;
+			      }
+			      break;
+		  	case 0x01: // Estado atual
+		  		switch (acaoAtual)
+			      {
+			        case 0x00:
+			            telaAtual = 0x04; 
+			            break;
+			        case 0x01: 
+			            telaAtual = 0x04;
+			            break;
+			        case 0x02;
+			            estadoAtual = 0x02;
+			            break;
+			        case 0x04:
+			        	telaAtual = 0x01;
+			        	break;
+			        case 0x05:
+			        	estadoAtual = 0x00;
+			        	break;
+			      }
+			      break;
+			  case 0x02: // Estado atual
+			  	switch (acaoAtual)
+			      {
+			        case 0x00:
+			            telaAtual = 0x05; 
+			            break;
+			        case 0x01: 
+			            telaAtual = 0x05;
+			            break;
+			        case 0x02;
+			            estadoAtual = 0x00;
+			            break;
+			        case 0x04:
+			        	telaAtual = 0x01;
+			        	break;
+			        case 0x05:
+			        	estadoAtual = 0x01;
+			        	break;
+			      }
+			      break;
+	      }
+	    case 0x03: // Tela atual
+	    	switch (estadoPorta)
+	    	{
+	    		case 0x00:
+	    			telaAtual = 0x06;
+	    			break;
+	    		case 0x01:
+	    			telaAtual = 0x07;
+	    			delay(1000);
+	    			telaAtual = 0x06;
+	    		    break;
+	    		case 0x02:
+	    			telaAtual = 0x08;
+	    			delay(1000);
+	    			telaAtual = 0x06;
+	    			break;
+	    	}
+	    case 0x04:
+	    	break;
+	    case 0x05:
+	    switch (estadoAtual)
+	    {
+	    	case 0x00:
+	    		switch (acaoAtual)
+	    		{
+	    			case 0x01:
+	    				estadoAtual = 0x01;
+	    				break;
+	    			case 0x03:
+	    				estadoAtual = 0x02;
+	    				telaAtual = 0x02;
+	    				break;
+	    			case 0x02:
+	    				estadoAtual = 0x04;
+	    				break;
+	    		}
+	    	case 0x01: // Estado atual 
+	    		switch (acaoAtual)
+	    		{
+	    			case 0x02:
+	    				estadoAtual = 0x02;
+	    				break;
+	    			case 0x03:
+	    				estadoAtual = 0x00;
+	    				break;	
+	    		}
+	    	case 0x02: // Estado atual
+	    		switch (acaoAtual)
+	    		{
+	    			case 0x02:
+	    				estadoAtual = 0x03;
+	    				break;
+	    			case 0x03:
+	    				estadoAtual = 0x00;
+	    				break;
+	    			case 0x04:
+	    				estadoAtual = 0x01;
+	    				break;	
+	    		}
+	    	case 0x03: // Estado atual
+	    		switch (acaoAtual)
+	    		{
+	    			case 0x03:
+	    				estadoAtual = 0x04;
+	    				break;
+	    			case 0x04:
+	    				estadoAtual = 0x02;
+	    				break;
+	    		}
+	    	case 0x04: // Estado atual
+	    		switch (acaoAtual)
+	    		{
+	    			case 0x01:
+	    				estadoAtual = 0x03;
+	    				break;
+	    			case 0x03:
+	    				estadoAtual = 0x02;
+	    				telaAtual = 0x02;
+	    				break;
+	    			case 0x04:
+	    				estadoAtual = 0x00;
+	    				break;
+	    		}
+	    	
+	    }
+	     	
+	  }
+ }
+ 
+ byteCtrlL = (estadoAtual << 4) | acaoAtual;
+ byteCtrlH = (estadoPorta << 6) | (alertaFumaca << 4) | telaAtual; 
+ 
+ byteCtrl = (byteCtrlH << 8) | byteCtrlL;
+ 
+ 
+   
 
   uint16_t controlBytes = (byte)byteCtrlL | ((byte)byteCtrlH << 8);
 
