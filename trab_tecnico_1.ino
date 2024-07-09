@@ -1,4 +1,4 @@
-// #include "Wire.h"
+#include "Wire.h"
 #define bottonMeio     6
 #define bottonDireita  3
 #define bottonEsquerda 7
@@ -42,6 +42,16 @@ void loop()
     obterAcaoCotrole();
     criarByteCtrl();
     controleDisplay();
+
+    // Envia o byteCtrl via I2C para o escravo
+    Wire.beginTransmission(8); // Endereço do escravo é 8
+    Wire.write(byteCtrlH);
+    Wire.endTransmission();
+
+    delay(500);
+    Wire.beginTransmission(8);
+    Wire.write(byteCtrlL);
+    Wire.endTransmission();
   }
 }
 
