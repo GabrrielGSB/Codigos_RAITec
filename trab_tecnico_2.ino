@@ -33,19 +33,48 @@ Adafruit_ILI9341 tft = Adafruit_ILI9341(LCD_CS, LCD_DC);
 #define POTENCIA_BAR_HEIGHT 20
 
 float correnteRMS = 20.0;
+uint16_t byteCtrlRecebido = 0x0000;
+byte count = 0;
+uint16_t lowByte, highByte;
 
 void setup() 
 {
   //CONFIGURAÇÕES INICIAIS DO DISPLAY
+  Wire.begin(8); // Endereço do escravo é 8
+  Wire.onReceive(receiveEvent); // Registra a função de evento de recepção
   Serial.begin(9600);
   tft.begin(0x9341);
   tft.setRotation(0);
-  tft.fillScreen(BLACK);
+  // tft.fillScreen(BLACK);
   //---------------------------------
-  FumacaDetectada();
+  // FumacaDetectada();
+  // Menus(1);
 }
 
-void loop() {
+void loop() 
+{
+  // Exemplo de como usar o byteCtrlRecebido
+  // Wire.onReceive(receiveEvent);
+  // Serial.print("Byte de controle recebido: ");
+  // Serial.println(byteCtrlRecebido, BIN);
+}
+
+void receiveEvent()
+{
+  count++;
+  highByte = Wire.read(); // Lê o byte mais significativo
+  Serial.print("Byte de controle recebido: ");
+  Serial.println(highByte, BIN);
+  if (count == 1) byteCtrlRecebido = (highByte << 8) | 0x00;
+  else            byteCtrlRecebido = byteCtrlRecebido | highByte;
+  if (count == 2) count = 0;
+  // byteCtrl  = (byteCtrlH << 8)   | byteCtrlL;
+  Serial.print("Byte de controle recebido: ");
+  Serial.println(byteCtrlRecebido, BIN);
+  // lowByte  = Wire.read(); // Lê o byte menos significativo
+  // Serial.print("Byte de controle recebido: ");
+  // Serial.println(lowByte, BIN);
+  // byteCtrlRecebido = Wire.read(); // Constrói o byteCtrl
 }
 
 void Intro() 
@@ -120,7 +149,12 @@ void Intro2() {
     tft.setCursor(40, 140);
     tft.println("UM PROJETO IOT");
 
+    // Draw white outline for the button
+    tft.drawRoundRect(35, 185, 170, 90, 15, WHITE);  // White outline with larger size
+
+    // Draw the red button
     tft.fillRoundRect(40, 190, 160, 80, 10, RED);  // Raio de 10 pixels
+    
     tft.setTextSize(3);
     tft.setCursor(60, 220);
     tft.setTextColor(WHITE);
@@ -130,7 +164,7 @@ void Intro2() {
   }
 }
 
-void Menus() 
+void Menus(int estado) 
 {
   // DESENHO DAS ESTRELAS-----------------------
   const int numStars = 100;
@@ -154,24 +188,48 @@ void Menus()
   }
   //-------------------------------------------
   // DESENHO DOS ÍCONES DO MENU-------------------
+
+  // Contorno branco para o botão "Portas"
+  switch (estado)
+  {
+    case 1:
+      tft.drawRoundRect(35, 5, 170, 90, 15, WHITE);  
+      break;
+    case 2:
+      tft.drawRoundRect(35, 115, 170, 90, 15, WHITE);
+      break;
+    case 3:
+      tft.drawRoundRect(35, 225, 170, 90, 15, WHITE);
+      break;
+  }
+  
+  // Botão "Portas"
   tft.fillRoundRect(40, 10, 160, 80, 10, RED);
   tft.setTextSize(3);
   tft.setCursor(50, 40);
   tft.setTextColor(WHITE);
   tft.println(" Portas ");
+
+  
+  // Botão "Corrente"
   tft.fillRoundRect(40, 120, 160, 80, 10, RED);
   tft.setTextSize(3);
   tft.setCursor(33, 150);
   tft.setTextColor(WHITE);
   tft.println(" Corrente ");
+
+  
+  // Botão "Lampadas"
   tft.fillRoundRect(40, 230, 160, 80, 10, RED);
   tft.setTextSize(3);
   tft.setCursor(30, 260);
   tft.setTextColor(WHITE);
   tft.println(" Lampadas ");
+
   // delay(4000);
   //----------------------------------------------
 }
+
 
 void PortaFechada() {
 
