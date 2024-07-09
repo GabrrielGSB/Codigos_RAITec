@@ -206,6 +206,7 @@ void controleDisplay()
 
       case 0x03: // Tela atual
         Serial.println("MENU DAS PORTAS");
+        if ((acaoAtual == 0x03) && acaoRealizada == true) telaAtual = 0x02;
         switch (estadoPorta)
         {
           case 0x00:
@@ -230,18 +231,19 @@ void controleDisplay()
         break;
 
       case 0x04: // Tela atual
+        if ((acaoAtual == 0x03) && acaoRealizada == true) telaAtual = 0x02;
         Serial.println("MENU DO CONSUMO");
         break;
 
       case 0x05: // Tela atual
-        estadoAtual = 0x00;
+        // estadoAtual = 0x00;
         Serial.println("MENU DAS LAMPADAS");
-        if (acaoRealizada == true)
+        switch (estadoAtual)
         {
-          switch (estadoAtual)
-          {
-            case 0x00:
-              Serial.println("LAMPADA 1");
+          case 0x00:
+            Serial.println("LAMPADA 1");
+            if (acaoRealizada == true)
+            {
               switch (acaoAtual)
               {
                 case 0x01:
@@ -255,9 +257,12 @@ void controleDisplay()
                   estadoAtual = 0x04;
                   break;
               }
-              break;
-            case 0x01: // Estado atual
-              Serial.println("LAMPADA 2");
+            }
+            break;
+          case 0x01: // Estado atual
+            Serial.println("LAMPADA 2");
+            if (acaoRealizada == true)
+            {
               switch (acaoAtual)
               {
                 case 0x02:
@@ -267,9 +272,12 @@ void controleDisplay()
                   estadoAtual = 0x00;
                   break;
               }
-              break;
-            case 0x02: // Estado atual
-              Serial.println("LAMPADA 3");
+            }
+            break;
+          case 0x02: // Estado atual
+            Serial.println("LAMPADA 3");
+            if (acaoRealizada == true)
+            {
               switch (acaoAtual)
               {
                 case 0x02:
@@ -282,9 +290,12 @@ void controleDisplay()
                   estadoAtual = 0x01;
                   break;
               }
-              break;
-            case 0x03: // Estado atual
-              Serial.println("LAMPADA 4");
+            }
+            break;
+          case 0x03: // Estado atual
+            Serial.println("LAMPADA 4");
+            if (acaoRealizada == true)
+            {
               switch (acaoAtual)
               {
                 case 0x03:
@@ -294,9 +305,12 @@ void controleDisplay()
                   estadoAtual = 0x02;
                   break;
               }
-              break;
-            case 0x04: // Estado atual
-              Serial.println("LAMPADA 5");
+            }
+            break;
+          case 0x04: // Estado atual
+            Serial.println("LAMPADA 5");
+            if (acaoRealizada == true)
+            {
               switch (acaoAtual)
               {
                 case 0x01:
@@ -310,8 +324,8 @@ void controleDisplay()
                   estadoAtual = 0x00;
                   break;
               }
-              break;
-          }
+            }
+            break;
         }
         break;
     }
