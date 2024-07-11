@@ -12,9 +12,6 @@ class Drone{
 private:
     Adafruit_MPU6050 mpu;
   
-   
- 
-
 public:
 	void Kalman1D(float KalmanState,float KalmanUncertainty,
                   float KalmanInput,float KalmanMeasurement);
@@ -27,12 +24,13 @@ public:
     void controlSpeed(int sped, int ch);
     void readPWMSetup(int pin1);
     int  readPWMLoop(int pinX);
-    int mot1();
+    int  mot1();
     void readPWMLoop_SM(int pinX, int ch);
     void reset_pid();
-    void pid_equation(float Error, float P        , float I, 
-     				  float D    , float PrevError, float PrevIterm);
-    void MainControlSetup(int serial, int pin1, int pin2, int pin3, int pin4);
+    void pid_equation(float Error, float P, float I, 
+     		      float D,  float PrevError, float PrevIterm);
+    void MainControlSetup(int serial, int pin1, int pin2, int pin3, int pin4,
+			  int pin5,   int pin6, int pin7, int pin8);
     void MainControlLoop(int pinPWM_Read1, int pinPWM_Read2, 
                          int pinPWM_Read3, int pinPWM_Read4);
 
