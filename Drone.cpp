@@ -8,8 +8,8 @@ int MotorVeloci1, MotorVeloci2, MotorVeloci3, MotorVeloci4; // Variáveis de con
 
 int CH1, CH2, CH3, CH4; // Variáveis que receberam os estado do controle remoto
 
-int ThrottleIdle   = 1180; // Valor mínimo para velocidade dos motores durante o voo
-int ThrottleCutOff = 1000; // Valor para parar os motores
+int ThrottleIdle   = 257; // Valor mínimo para velocidade dos motores durante o voo
+int ThrottleCutOff = 257; // Valor para parar os motores
 
 int count = 0;
 int Timer1 = 0, Timer2 = 0;
@@ -41,8 +41,8 @@ float PrevItermRateRoll = 0, PrevItermRatePitch = 0, PrevItermRateYaw = 0; // ..
 
 float PIDReturn[] = {0, 0, 0}; // Saída da função PID
 
-float PRateRoll = 0.6,  PRatePitch = PRateRoll, PRateYaw  = 2;  // Definição das variáveis necessárias para o...
-float IRateRoll = 3.5,  IRatePitch = IRateRoll, IRateYaw  = 12; // controlador PID "ANGLE MODE", junto com os valores de...
+float PRateRoll = 0.6,  PRatePitch = PRateRoll, PRateYaw  = 1;  // Definição das variáveis necessárias para o...
+float IRateRoll = 3.5,  IRatePitch = IRateRoll, IRateYaw  = 6; // controlador PID "ANGLE MODE", junto com os valores de...
 float DRateRoll = 0.03, DRatePitch = DRateRoll, DRateYaw  = 0;   // P, I e D, para o ajuste do controlador
 
 float DesiredAngleRoll, DesiredAnglePitch;     // Variáveis de angulo desejado para PID "ANGLE MODE"...
@@ -86,13 +86,18 @@ void Drone::pid_equation(float Error, float P , float I, float D, float PrevErro
 	PIDReturn[2] = Iterm;
 }
 //********************************************************************************************************
-void Drone::MainControlSetup(int serial, int pin1, int pin2, int pin3, int pin4){
-	
+void Drone::MainControlSetup(int serial, int pin1, int pin2, int pin3, int pin4,
+							 int pin5,int pin6,int pin7, int pin8) {
 	Serial.begin(serial);
 	readPWMSetup(pin1);
 	readPWMSetup(pin2);
 	readPWMSetup(pin3);
 	readPWMSetup(pin4);
+
+	setupPWM(250, 10, pin5, 0);
+	setupPWM(250, 10, pin6, 1);
+	setupPWM(250, 10, pin7, 2);
+	setupPWM(250, 10, pin8, 3);
 
 	MPUconfigSetup();
 	CalibrarMPU();
@@ -120,6 +125,15 @@ void Drone::MainControlLoop(int pinPWM_Read1, int pinPWM_Read2, int pinPWM_Read3
 	CH2 = readPWMLoop(pinPWM_Read2); // ...
 	CH3 = readPWMLoop(pinPWM_Read3); // ...
 	CH4 = readPWMLoop(pinPWM_Read4); // ...
+
+	Serial.print("Canal 1: ");
+	Serial.println(CH1);
+	Serial.print("Canal 2: ");
+	Serial.println(CH2);
+	Serial.print("Canal 3: ");
+	Serial.println(CH3);
+	Serial.print("Canal 4: ");
+	Serial.println(CH4);
 
 	DesiredAngleRoll  = 0.10*(CH1 - 1500); // Valores desejados de ângulo obtidos...
 	DesiredAnglePitch = 0.10*(CH2 - 1500); // a partir do controle remoto
@@ -172,18 +186,6 @@ void Drone::MainControlLoop(int pinPWM_Read1, int pinPWM_Read2, int pinPWM_Read3
 	MotorVeloci2 = 1.024*(InputThrottle - InputRoll + InputPitch + InputYaw); // dos inputs vindos do controle remoto que... 
 	MotorVeloci3 = 1.024*(InputThrottle + InputRoll + InputPitch - InputYaw); // passaram pela função PID...
 	MotorVeloci4 = 1.024*(InputThrottle + InputRoll - InputPitch + InputYaw); // ...
-
-	Serial.print("Motor1:");   //Print dos valores para visualização do input aos motores
-	Serial.print(MotorVeloci1);
-	Serial.print(",");
-	Serial.print("Motor2:");
-	Serial.print(MotorVeloci2);
-	Serial.print(",");
-	Serial.print("Motor3:");
-	Serial.print(MotorVeloci3);
-	Serial.print(",");
-	Serial.print("Motor4:");
-	Serial.println(MotorVeloci4);
 	
 	//##############################MEDIDAS DE SEGURANÇA############################
 	if (MotorVeloci1 > 2000) MotorVeloci1 = 1999; // Medida de segurança para evitar extrapolação da potência máxima dos motores
@@ -191,18 +193,53 @@ void Drone::MainControlLoop(int pinPWM_Read1, int pinPWM_Read2, int pinPWM_Read3
 	if (MotorVeloci3 > 2000) MotorVeloci3 = 1999; // ... 
 	if (MotorVeloci4 > 2000) MotorVeloci4 = 1999; // ...
 	
-	// if (MotorVeloci1 < ThrottleIdle) MotorVeloci1 = ThrottleIdle; // Medida de segurança para manter o drone voando com...
-	// if (MotorVeloci2 < ThrottleIdle) MotorVeloci2 = ThrottleIdle; // uma potência mínima...
-	// if (MotorVeloci3 < ThrottleIdle) MotorVeloci3 = ThrottleIdle; // ...
-	// if (MotorVeloci4 < ThrottleIdle) MotorVeloci4 = ThrottleIdle; // ...
+	if (MotorVeloci1 < ThrottleIdle) MotorVeloci1 = ThrottleIdle; // Medida de segurança para manter o drone voando com...
+	if (MotorVeloci2 < ThrottleIdle) MotorVeloci2 = ThrottleIdle; // uma potência mínima...
+	if (MotorVeloci3 < ThrottleIdle) MotorVeloci3 = ThrottleIdle; // ...
+	if (MotorVeloci4 < ThrottleIdle) MotorVeloci4 = ThrottleIdle; // ...
+
+	int speed1 = map(MotorVeloci1,1000,2000,257,385);
+	int speed2 = map(MotorVeloci2,1000,2000,257,385);
+	int speed3 = map(MotorVeloci3,1000,2000,257,385);
+	int speed4 = map(MotorVeloci4,1000,2000,257,385);
+
 
 	if (CH3 < 1050) { // Medida de segurança para ter certeza do desligamento dos motores
-		MotorVeloci1 = ThrottleCutOff; 
-		MotorVeloci2 = ThrottleCutOff;
-		MotorVeloci3 = ThrottleCutOff; 
-		MotorVeloci4 = ThrottleCutOff;
+		speed1 = ThrottleCutOff; 
+		speed2 = ThrottleCutOff;
+		speed3 = ThrottleCutOff; 
+		speed4 = ThrottleCutOff;
 		reset_pid(); // Toda vez que o drone pousar o PID precisa ser resetado
 	}
+
+	controlSpeed(speed1,0);
+	controlSpeed(speed2,1);
+	controlSpeed(speed3,2);
+	controlSpeed(speed4,3);
+
+	// Serial.print("Motor1:");   //Print dos valores para visualização do input aos motores
+	// Serial.print(MotorVeloci1);
+	// Serial.print(",");
+	// Serial.print("Motor2:");
+	// Serial.print(MotorVeloci2);
+	// Serial.print(",");
+	// Serial.print("Motor3:");
+	// Serial.print(MotorVeloci3);
+	// Serial.print(",");
+	// Serial.print("Motor4:");
+	// Serial.println(MotorVeloci4);
+
+	Serial.print("Motor1:");   //Print dos valores para visualização do input aos motores
+	Serial.print(speed1);
+	Serial.println(" ");
+	Serial.print("Motor2:");
+	Serial.print(speed2);
+	Serial.println(" ");
+	Serial.print("Motor3:");
+	Serial.print(speed3);
+	Serial.println(" ");
+	Serial.print("Motor4:");
+	Serial.println(speed4);
 
 	while (micros() - LoopTimer < 4000); // tempo de espera para novo loop de controle... 
 	LoopTimer = micros(); 				 // a frequência usada é de 250Hz
@@ -322,15 +359,15 @@ void Drone::DisplaySerialMpuData(){
 //********************************************************************************************************
 void Drone::DisplayPlotterMpuData(){
 
-	// Kalman1D(KalmanAngleRoll, KalmanUncertaintyAngleRoll, RateRoll, AngleRoll);     // chamada da função do filtro afim...
+	Kalman1D(KalmanAngleRoll, KalmanUncertaintyAngleRoll, RateRoll, AngleRoll);     // chamada da função do filtro afim...
 
-	// KalmanAngleRoll             = Kalman1DOutput[0];                                // de obter o ângulo sem ruído
-	// KalmanUncertaintyAngleRoll  = Kalman1DOutput[1];                                // ...
+	KalmanAngleRoll             = Kalman1DOutput[0];                                // de obter o ângulo sem ruído
+	KalmanUncertaintyAngleRoll  = Kalman1DOutput[1];                                // ...
   
-  	// Kalman1D(KalmanAnglePitch, KalmanUncertaintyAnglePitch, RatePitch, AnglePitch); // ...
+  	Kalman1D(KalmanAnglePitch, KalmanUncertaintyAnglePitch, RatePitch, AnglePitch); // ...
 
-	// KalmanAnglePitch            = Kalman1DOutput[0];                                // ...
-	// KalmanUncertaintyAnglePitch = Kalman1DOutput[1];
+	KalmanAnglePitch            = Kalman1DOutput[0];                                // ...
+	KalmanUncertaintyAnglePitch = Kalman1DOutput[1];
 
 	if ((millis() - Timer2) >= 10){
 		Timer2 = millis();
@@ -352,13 +389,12 @@ void Drone::DisplayPlotterMpuData(){
 //********************************************************************************************************
 void Drone::setupPWM(int freq, int resolution, int pin, int ch){
   pinMode(pin, OUTPUT); // Definição do pino de saída do PWM de controle do motor
-
   ledcAttachPin(pin, ch); // Funções para definição do PWM na ESP32
   ledcSetup(ch, freq, resolution);// ...
 }
 //********************************************************************************************************
 // Função para controlar a velocidade dos motores
-// min_sped=64 max_sped=127 para resolução = 8 bits
+// min_sped=257 max_sped=511 para resolução = 10 bits
 void Drone::controlSpeed(int speed, int ch){
 	ledcWrite(ch, speed); // Função para mudança do PWM na ESP32
 }
