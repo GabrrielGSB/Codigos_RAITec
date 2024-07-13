@@ -1,16 +1,16 @@
 #include <Wire.h>
 #include <Adafruit_GFX.h>
-#include "Adafruit_ILI9341.h"
+#include <Adafruit_TFTLCD.h>
 
-#define LCD_RD 12
-#define LCD_WR 1
-#define LCD_DC 9
-#define LCD_CS 10
-#define LCD_RESET 8
+#define LCD_RD A0
+#define LCD_WR A1
+#define LCD_CD A2
+#define LCD_CS A3
+#define LCD_RESET A4
 
-Adafruit_ILI9341 tft = Adafruit_ILI9341(LCD_CS, LCD_DC);
+Adafruit_TFTLCD tft(LCD_CS, LCD_CD, LCD_WR, LCD_RD, LCD_RESET);
 
-//DEFINIÇÃO DAS CORES UTILIZADAS
+//DEFINIÇÃO DAS CORES UTIbLIZADAS
 #define WHITE 0xFFFF
 #define YELLOW 0xFFE0
 #define RED 0xF800
@@ -33,9 +33,20 @@ Adafruit_ILI9341 tft = Adafruit_ILI9341(LCD_CS, LCD_DC);
 #define POTENCIA_BAR_HEIGHT 20
 
 float correnteRMS = 20.0;
-uint16_t byteCtrlRecebido = 0x0000;
+uint16_t byteCtrl = 0x0000;
 byte count = 0;
 uint16_t lowByte, highByte;
+
+byte acaoAtual     = 0x0000;
+uint16_t telaAtual = 0x0000;
+uint16_t telaAtualOld = 0x0000;
+byte estadoAtual  = 0x0000;
+byte estadoPorta  = 0x0400;
+byte alertaFumaca = 0x0000;
+
+unsigned long tempoAntigo = 0;
+unsigned long tempoAtual;
+uint16_t  intervalo = 1000;
 
 void setup() 
 {
@@ -45,41 +56,50 @@ void setup()
   Serial.begin(9600);
   tft.begin(0x9341);
   tft.setRotation(0);
-  // tft.fillScreen(BLACK);
+  tft.fillScreen(WHITE);
   //---------------------------------
   // FumacaDetectada();
-  // Menus(1);
+  Intro();
 }
 
-void loop() 
+void loop(){}
+
+void controleDisplay()
 {
-  // Exemplo de como usar o byteCtrlRecebido
-  // Wire.onReceive(receiveEvent);
-  // Serial.print("Byte de controle recebido: ");
-  // Serial.println(byteCtrlRecebido, BIN);
+  telaAtualOld = telaAtual;
+  telaAtual = (byteCtrl >> 8) & 0x000F;
+  estadoAtual = ((byteCtrl >> 4) & 0x000F) + 1;
+  // Serial.println(estadoAtual);
+
+  if (telaAtual == 0) Intro();
+  if (telaAtual == 1) Intro2();
+  if (telaAtual == 2) 
+  {
+    tft.reset();
+    Serial.println(estadoAtual);
+    Menus(estadoAtual);
+  } 
+  if (telaAtual == 3) PortaFechada();
+  if (telaAtual == 4) exibirLCD(correnteRMS);
+  if (telaAtual == 5) Lampadas();
 }
 
-void receiveEvent()
+void receiveEvent(int howMany)
 {
-  count++;
-  highByte = Wire.read(); // Lê o byte mais significativo
-  Serial.print("Byte de controle recebido: ");
-  Serial.println(highByte, BIN);
-  if (count == 1) byteCtrlRecebido = (highByte << 8) | 0x00;
-  else            byteCtrlRecebido = byteCtrlRecebido | highByte;
-  if (count == 2) count = 0;
-  // byteCtrl  = (byteCtrlH << 8)   | byteCtrlL;
-  Serial.print("Byte de controle recebido: ");
-  Serial.println(byteCtrlRecebido, BIN);
-  // lowByte  = Wire.read(); // Lê o byte menos significativo
-  // Serial.print("Byte de controle recebido: ");
-  // Serial.println(lowByte, BIN);
-  // byteCtrlRecebido = Wire.read(); // Constrói o byteCtrl
+  lowByte  = Wire.read();
+  highByte = Wire.read(); 
+ 
+  byteCtrl = (highByte << 8) | lowByte;
+  Serial.print("byte recebido: ");
+  Serial.println(byteCtrl, BIN);
+  tft.begin(0x9341);
+  controleDisplay();
+  
 }
 
 void Intro() 
 {
-
+  tft.fillScreen(WHITE);
   tft.setCursor(10, 75);
   tft.setTextColor(PURPLE);
   tft.setTextSize(4);
@@ -114,7 +134,9 @@ void Intro()
   tft.fillRoundRect(centerX1 - widthL / 2 - thickness, centerY1 + spacing1, widthL, thickness1, 5, PURPLE);  // Linha vertical
 }
 
-void Intro2() {
+void Intro2() 
+{
+  tft.fillScreen(BLACK);
   const int numStars = 100;
   int starX[numStars], starY[numStars];
 
@@ -124,44 +146,37 @@ void Intro2() {
     starY[i] = random(tft.height());
   }
 
-  while (true) {
-    tft.fillScreen(BLACK);
+  tft.fillScreen(BLACK);
 
-    // Draw stars with twinkling
-    for (int i = 0; i < numStars; i++) {
+  // Draw stars with twinkling
+  for (int i = 0; i < numStars; i++) {
+    tft.drawPixel(starX[i], starY[i], WHITE);
+    if (random(100) < 5) {
+      tft.drawPixel(starX[i], starY[i], BLACK);
+      delay(50);
       tft.drawPixel(starX[i], starY[i], WHITE);
-      if (random(100) < 5) {
-        tft.drawPixel(starX[i], starY[i], BLACK);
-        delay(50);
-        tft.drawPixel(starX[i], starY[i], WHITE);
-      }
     }
-    // Text with drop shadow (red text)
-    tft.setTextSize(4);
-    tft.setTextColor(RED);  // Set text color to RED
-    tft.setCursor(50, 60);
-    tft.println("A CASA");
-    tft.setCursor(40, 95);
-    tft.println("MONSTRO");
-
-    tft.setTextSize(2);
-    tft.setTextColor(WHITE);
-    tft.setCursor(40, 140);
-    tft.println("UM PROJETO IOT");
-
-    // Draw white outline for the button
-    tft.drawRoundRect(35, 185, 170, 90, 15, WHITE);  // White outline with larger size
-
-    // Draw the red button
-    tft.fillRoundRect(40, 190, 160, 80, 10, RED);  // Raio de 10 pixels
-    
-    tft.setTextSize(3);
-    tft.setCursor(60, 220);
-    tft.setTextColor(WHITE);
-    tft.println(" START ");
-
-    delay(1000);
   }
+  // Text with drop shadow (red text)
+  tft.setTextSize(4);
+  tft.setTextColor(RED);  // Set text color to RED
+  tft.setCursor(50, 60);
+  tft.println("A CASA");
+  tft.setCursor(40, 95);
+  tft.println("MONSTRO");
+  tft.setTextSize(2);
+  tft.setTextColor(WHITE);
+  tft.setCursor(40, 140);
+  tft.println("UM PROJETO IOT");
+  // Draw white outline for the button
+  tft.drawRoundRect(35, 185, 170, 90, 15, WHITE);  // White outline with larger size
+  // Draw the red button
+  tft.fillRoundRect(40, 190, 160, 80, 10, RED);  // Raio de 10 pixels
+  
+  tft.setTextSize(3);
+  tft.setCursor(60, 220);
+  tft.setTextColor(WHITE);
+  tft.println(" START ");
 }
 
 void Menus(int estado) 
@@ -230,9 +245,9 @@ void Menus(int estado)
   //----------------------------------------------
 }
 
-
-void PortaFechada() {
-
+void PortaFechada() 
+{
+  tft.fillScreen(BLACK);
   tft.setTextColor(RED);
   tft.setTextSize(3);
   tft.setCursor(5, 100);
@@ -430,7 +445,7 @@ void Potencia(float correnteRMS)
 }
 
 void Lampadas() {
-
+  tft.fillScreen(BLACK);
   //Grossura de cada Pixel
   int wallThickness = 10;
 
