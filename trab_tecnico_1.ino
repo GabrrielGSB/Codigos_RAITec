@@ -1,17 +1,17 @@
 #include "Wire.h"
-#define bottonMeio     6
-#define bottonDireita  3
-#define bottonEsquerda 7
-#define bottonCima     5
-#define bottonBaixo    4
+#define controlX       A0
+#define controlY       A1
+#define controlBtt     3
+
 
 unsigned long tempoAntigo = 0;
 unsigned long tempoAtual;
-uint16_t  intervalo = 1000;
+uint16_t  intervalo = 250;
 
 
-uint16_t byteCtrl  = 0x0000;
-uint16_t byteCtrlH = 0x0000;
+uint16_t byteCtrl    = 0x0000;
+uint16_t byteCtrlOld = 0x0000;
+uint16_t byteCtrlH   = 0x0000;
 
 byte byteCtrlL    = 0x00;
 byte acaoAtual    = 0x00;
@@ -20,17 +20,25 @@ byte estadoAtual  = 0x00;
 byte estadoPorta  = 0x04;
 byte alertaFumaca = 0x00;
 
-bool acaoRealizada = false;
+bool acaoRealizada  = false;
+bool oneBtt       = 0,
+     oneUp        = 0, 
+     oneDown      = 0, 
+     oneLeft      = 0, 
+     oneRight     = 0,
+     onePastBtt   = 0,
+     onePastUp    = 0,
+     onePastDown  = 0, 
+     onePastLeft  = 0, 
+     onePastRight = 0;
 
 void setup()
 {
   Serial.begin(9600);
 
-  pinMode(bottonMeio,     INPUT);
-  pinMode(bottonDireita,  INPUT);
-  pinMode(bottonEsquerda, INPUT);
-  pinMode(bottonCima,     INPUT);
-  pinMode(bottonBaixo,    INPUT);
+  pinMode(controlX,   INPUT);
+  pinMode(controlY,   INPUT);
+  pinMode(controlBtt, INPUT);
 }
 void loop()
 {
@@ -39,50 +47,122 @@ void loop()
   {
     tempoAntigo = tempoAtual;
     acaoRealizada = false;
+
+    byteCtrlOld = byteCtrl;
     obterAcaoCotrole();
     criarByteCtrl();
     controleDisplay();
-
-    // Envia o byteCtrl via I2C para o escravo
-    Wire.beginTransmission(8); // Endereço do escravo é 8
-    Wire.write(byteCtrlH);
-    Wire.endTransmission();
-
-    delay(500);
-    Wire.beginTransmission(8);
-    Wire.write(byteCtrlL);
-    Wire.endTransmission();
+    if (byteCtrl != byteCtrlOld)
+    {
+      enviarControle();
+    }
+    
   }
+  
+}
+
+void enviarControle()
+{
+  // delay(1000);
+  Wire.begin();
+  Wire.beginTransmission(8); 
+  Wire.write((byte*)&byteCtrl, sizeof(byteCtrl));
+  // Wire.write((byte*)&byteCtrlL, sizeof(byteCtrlL));
+  Wire.endTransmission();
+  Wire.end();
+  // delay(500);
+  // Wire.beginTransmission(8);
+  
+  // Wire.endTransmission();
 }
 
 void obterAcaoCotrole()
 {
-  tempoAntigo = tempoAtual;
-  if (digitalRead(bottonMeio)     == HIGH)
+  if (digitalRead(controlBtt) == LOW)
   {
-    acaoRealizada = true;
-    acaoAtual = 0x00;
+    oneBtt = 1;
+    if (onePastBtt == 0)
+    {
+      acaoRealizada = true;
+      acaoAtual = 0x00;
+      Serial.println(acaoAtual);
+    }
+    onePastBtt = oneBtt;
   }
-  if (digitalRead(bottonDireita)  == HIGH)
+  else
   {
-    acaoRealizada = true;
-    acaoAtual = 0x01;
+   oneBtt = 0;
+   onePastBtt = oneBtt;
   }
-  if (digitalRead(bottonBaixo)    == HIGH)
+
+  if (analogRead(controlY) < 100)
   {
-    acaoRealizada = true;
-    acaoAtual = 0x02;
+    oneRight = 1;
+    if (onePastRight == 0)
+    {
+      acaoRealizada = true;
+      acaoAtual = 0x01;
+      Serial.println(acaoAtual);
+    }
+    onePastRight = oneRight;
   }
-  if (digitalRead(bottonEsquerda) == HIGH)
+  else
   {
-    acaoRealizada = true;
-    acaoAtual = 0x03;
+    oneRight = 0;
+    onePastRight = oneRight;
   }
-  if (digitalRead(bottonCima)     == HIGH)
+
+  if (analogRead(controlX) < 100)
   {
-    acaoRealizada = true;
-    acaoAtual = 0x04;
+    oneDown = 1;
+    if (onePastDown == 0)
+    {
+      acaoRealizada = true;
+      acaoAtual = 0x02;
+      Serial.println(acaoAtual);
+    }
+    onePastDown = oneDown;
   }
+  else
+  {
+    oneDown = 0;
+    onePastDown = oneDown;
+  }
+
+  if (analogRead(controlY) > 900)
+  {
+    oneLeft = 1;
+    if (onePastLeft == 0)
+    {
+      acaoRealizada = true;
+      acaoAtual = 0x03;
+      Serial.println(acaoAtual);
+    }
+    onePastLeft = oneLeft;
+  }
+  else
+  {
+    oneLeft = 0;
+    onePastLeft = oneLeft;
+  }
+
+  if (analogRead(controlX) > 900)
+  {
+    oneUp = 1;
+    if (onePastUp == 0)
+    {
+      acaoRealizada = true;
+      acaoAtual = 0x04;
+      Serial.println(acaoAtual);
+    }
+    onePastUp = oneUp;
+  }
+  else
+  {
+   oneUp = 0;
+   onePastUp = oneUp;
+  }
+
 
 }
 
@@ -91,23 +171,23 @@ void criarByteCtrl()
   byteCtrlL = (estadoAtual << 4) | acaoAtual;
   byteCtrlH = (estadoPorta << 5) | (alertaFumaca << 4) | telaAtual;
   byteCtrl  = (byteCtrlH << 8)   | byteCtrlL;
-  Serial.print("O byte de controle montado he: ");
-  Serial.println(byteCtrl, BIN);
+  // Serial.print("O byte de controle montado he: ");
+  // Serial.println(byteCtrl, BIN);
 
-  Serial.print("O valor da Tela Atual he: ");
-  Serial.println(telaAtual, BIN);
-  Serial.println("");
-  Serial.print("O valor do Estado Atual he: ");
-  Serial.println(estadoAtual, BIN);
-  Serial.println("");
-  Serial.print("O valor da Acao Atual he: ");
-  Serial.println(acaoAtual, BIN);
-  Serial.println("");
-  Serial.print("O valor do Estado da porta Atual he: ");
-  Serial.println(estadoPorta, BIN);
-  Serial.println("");
-  Serial.print("O valor do alerta fumaca he: ");
-  Serial.println(alertaFumaca, BIN);
+  // Serial.print("O valor da Tela Atual he: ");
+  // Serial.println(telaAtual, BIN);
+  // Serial.println("");
+  // Serial.print("O valor do Estado Atual he: ");
+  // Serial.println(estadoAtual, BIN);
+  // Serial.println("");
+  // Serial.print("O valor da Acao Atual he: ");
+  // Serial.println(acaoAtual, BIN);
+  // Serial.println("");
+  // Serial.print("O valor do Estado da porta Atual he: ");
+  // Serial.println(estadoPorta, BIN);
+  // Serial.println("");
+  // Serial.print("O valor do alerta fumaca he: ");
+  // Serial.println(alertaFumaca, BIN);
 }
 
 void controleDisplay()
@@ -125,7 +205,6 @@ void controleDisplay()
     {
       case 0x00: // Tela atual
         Serial.println("INTRODUÇÃO 1");
-        delay(1000);
         if ((acaoAtual == 0x00) && (acaoRealizada == true)) telaAtual = 0x01;
         break;
 
