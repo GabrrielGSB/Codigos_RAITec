@@ -195,12 +195,16 @@ void controleDisplay()
   if (alertaFumaca == 0x01)
   {
     telaAtual = 0x09;
-    delay(3000);
+    Serial.println("ALERTA DE FUMAÇA!!!");
+    criarByteCtrl();
+    enviarControle();
+    delay(850);
   } else
   {
     if (acaoRealizada == false)Serial.println("NENHUMA ACAO DETECTADA!");
     else                       Serial.println("ACAO DETECTADA, FEZENDO O CONTROLE...");
     
+    if (telaAtual == 0x06) telaAtual = 0x03;
     switch (telaAtual)
     {
       case 0x00: // Tela atual
@@ -295,26 +299,42 @@ void controleDisplay()
 
       case 0x03: // Tela atual
         Serial.println("MENU DAS PORTAS");
-        if ((acaoAtual == 0x03) && acaoRealizada == true) telaAtual = 0x02;
+        if ((acaoAtual == 0x03) && acaoRealizada == true)
+        {
+          telaAtual = 0x02;
+          criarByteCtrl();
+          enviarControle();
+        }
         switch (estadoPorta)
         {
-          case 0x00:
+          case 0x04:
             Serial.println("Porta Fechada");
             telaAtual = 0x06;
+            criarByteCtrl();
+            enviarControle();
+            telaAtual = 0x03;
             break;
-          case 0x01:
+          case 0x05:
             Serial.println("Porta Aberta");
             telaAtual = 0x07;
-            delay(1000);
+            criarByteCtrl();
+            enviarControle();
+            delay(5000);
             Serial.println("Porta Fechada");
             telaAtual = 0x06;
+            criarByteCtrl();
+            enviarControle();
             break;
-          case 0x02:
+          case 0x06:
             Serial.println("Porta Trancada");
             telaAtual = 0x08;
-            delay(1000);
+            criarByteCtrl();
+            enviarControle();
+            delay(5000);
             Serial.println("Porta Fechada");
             telaAtual = 0x06;
+            criarByteCtrl();
+            enviarControle();
             break;
         }
         break;
