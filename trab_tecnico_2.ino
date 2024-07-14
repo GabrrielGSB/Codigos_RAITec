@@ -34,12 +34,11 @@ Adafruit_TFTLCD tft(LCD_CS, LCD_CD, LCD_WR, LCD_RD, LCD_RESET);
 
 float correnteRMS = 20.0;
 uint16_t byteCtrl = 0x0000;
-byte count = 0;
 uint16_t lowByte, highByte;
+uint16_t telaAtual = 0x0000;
 
 byte acaoAtual     = 0x0000;
-uint16_t telaAtual = 0x0000;
-uint16_t telaAtualOld = 0x0000;
+
 byte estadoAtual  = 0x0000;
 byte estadoPorta  = 0x0400;
 byte alertaFumaca = 0x0000;
@@ -66,22 +65,34 @@ void loop(){}
 
 void controleDisplay()
 {
-  telaAtualOld = telaAtual;
   telaAtual = (byteCtrl >> 8) & 0x000F;
   estadoAtual = ((byteCtrl >> 4) & 0x000F) + 1;
-  // Serial.println(estadoAtual);
+  alertaFumaca = (byteCtrl >> 12) & 0x0001;
+  estadoPorta = (byteCtrl >> 13) & 0x0003;
+  Serial.println(telaAtual);
 
-  if (telaAtual == 0) Intro();
-  if (telaAtual == 1) Intro2();
-  if (telaAtual == 2) 
+  if(alertaFumaca == 1)
   {
-    tft.reset();
-    Serial.println(estadoAtual);
-    Menus(estadoAtual);
-  } 
-  if (telaAtual == 3) PortaFechada();
-  if (telaAtual == 4) exibirLCD(correnteRMS);
-  if (telaAtual == 5) Lampadas();
+    FumacaDetectada();
+  }
+  else
+  {
+    if (telaAtual == 0) Intro();
+    if (telaAtual == 1) Intro2();
+    if (telaAtual == 2) 
+    {
+      tft.reset();
+      Menus(estadoAtual);
+    } 
+    if (telaAtual == 3) PortaFechada();
+    if (telaAtual == 4) exibirLCD(correnteRMS);
+    if (telaAtual == 5) Lampadas();
+    if (telaAtual == 6) PortaFechada();
+    if (telaAtual == 7) PortaAberta();
+    if (telaAtual == 8) PortaTrancada();
+  }
+
+  
 }
 
 void receiveEvent(int howMany)
@@ -372,29 +383,62 @@ void FumacaDetectada()
   int y = 230;
   int size = 90;
 
+  tft.fillScreen(BLACK);
+  tft.setTextColor(RED);
+  tft.setTextSize(4);
+  tft.setCursor(60, 90);
+  tft.println("SMOKE");
 
-  while (true) {
-    tft.fillScreen(BLACK);
-    tft.setTextColor(RED);
-    tft.setTextSize(4);
-    tft.setCursor(60, 90);
-    tft.println("SMOKE");
+  tft.setTextColor(RED);
+  tft.setTextSize(4);
+  tft.setCursor(25, 120);
+  tft.println("DETECTED");
 
-    tft.setTextColor(RED);
-    tft.setTextSize(4);
-    tft.setCursor(25, 120);
-    tft.println("DETECTED");
+  tft.fillTriangle(120, 190, 50, 298, 190, 298, YELLOW);
+  tft.drawTriangle(120, 190, 50, 298, 190, 298, RED);
 
-    tft.fillTriangle(120, 190, 50, 298, 190, 298, YELLOW);
-    tft.drawTriangle(120, 190, 50, 298, 190, 298, RED);
+  tft.setTextColor(BLACK);
+  tft.setTextSize(10);
+  tft.setCursor(95,215);
+  tft.println("!");
+}
 
-    tft.setTextColor(BLACK);
-    tft.setTextSize(10);
-    tft.setCursor(95,215);
-    tft.println("!");
+void Lampadas() {
+  tft.fillScreen(BLACK);
+  //Grossura de cada Pixel
+  int wallThickness = 10;
 
-    delay(1000);
-  }
+  //Deneho da borda
+  tft.fillRect(0, 0, 240, wallThickness, WHITE);    // Superior
+  tft.fillRect(0, 0, wallThickness, 320, WHITE);    // Esquerdo
+  tft.fillRect(230, 0, wallThickness, 320, WHITE);  // Direito
+  tft.fillRect(0, 310, 240, wallThickness, WHITE);  // Baixo
+
+
+  tft.fillRect(170, 10, wallThickness, 10, WHITE);  //Vertical
+  tft.fillRect(130, 10, wallThickness, 10, WHITE);  //Vertical
+
+
+  tft.fillRect(170, 50, wallThickness, 40, WHITE);   //Vertical
+  tft.fillRect(180, 80, 50, wallThickness, WHITE);   //Horizontal
+  tft.fillRect(170, 90, wallThickness, 70, WHITE);   //Vertical
+  tft.fillRect(210, 150, 20, wallThickness, WHITE);  //Horizontal
+
+  tft.fillRect(130, 160, 50, wallThickness, WHITE);  //Horizontal
+  tft.fillRect(130, 160, wallThickness, 80, WHITE);  //Vertical
+  tft.fillRect(130, 290, wallThickness, 20, WHITE);  //Vertical
+
+
+  tft.fillRect(10, 120, 130, wallThickness, WHITE);  //Horizontal
+  tft.fillRect(130, 50, wallThickness, 70, WHITE);   //Vertical
+
+  //Lâmpadas
+
+  tft.fillCircle(70, 70, 10, RED);      //Quarto
+  tft.fillCircle(70, 220, 10, YELLOW);  // SALA
+  tft.fillCircle(205, 50, 10, BLUE);    //Quarto de serviço
+  tft.fillCircle(205, 120, 10, GREEN);
+  tft.fillCircle(185, 220, 10, CYAN);   // Cozinha
 }
 
 void exibirLCD(float correnteRMS) 
@@ -444,40 +488,3 @@ void Potencia(float correnteRMS)
   tft.print(Potencia);
 }
 
-void Lampadas() {
-  tft.fillScreen(BLACK);
-  //Grossura de cada Pixel
-  int wallThickness = 10;
-
-  //Deneho da borda
-  tft.fillRect(0, 0, 240, wallThickness, WHITE);    // Superior
-  tft.fillRect(0, 0, wallThickness, 320, WHITE);    // Esquerdo
-  tft.fillRect(230, 0, wallThickness, 320, WHITE);  // Direito
-  tft.fillRect(0, 310, 240, wallThickness, WHITE);  // Baixo
-
-
-  tft.fillRect(170, 10, wallThickness, 10, WHITE);  //Vertical
-  tft.fillRect(130, 10, wallThickness, 10, WHITE);  //Vertical
-
-
-  tft.fillRect(170, 50, wallThickness, 40, WHITE);   //Vertical
-  tft.fillRect(180, 80, 50, wallThickness, WHITE);   //Horizontal
-  tft.fillRect(170, 90, wallThickness, 70, WHITE);   //Vertical
-  tft.fillRect(210, 150, 20, wallThickness, WHITE);  //Horizontal
-
-  tft.fillRect(130, 160, 50, wallThickness, WHITE);  //Horizontal
-  tft.fillRect(130, 160, wallThickness, 80, WHITE);  //Vertical
-  tft.fillRect(130, 290, wallThickness, 20, WHITE);  //Vertical
-
-
-  tft.fillRect(10, 120, 130, wallThickness, WHITE);  //Horizontal
-  tft.fillRect(130, 50, wallThickness, 70, WHITE);   //Vertical
-
-  //Lâmpadas
-
-  tft.fillCircle(70, 70, 10, RED);      //Quarto
-  tft.fillCircle(70, 220, 10, YELLOW);  // SALA
-  tft.fillCircle(205, 50, 10, BLUE);    //Quarto de serviço
-  tft.fillCircle(205, 120, 10, GREEN);
-  tft.fillCircle(185, 220, 10, CYAN);   // Cozinha
-}
