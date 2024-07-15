@@ -77,16 +77,12 @@ void controleDisplay()
   }
   else
   {
-    if (telaAtual == 0) Intro();
+    if (telaAtual == 0) Intro(); 
     if (telaAtual == 1) Intro2();
-    if (telaAtual == 2) 
-    {
-      tft.reset();
-      Menus(estadoAtual);
-    } 
+    if (telaAtual == 2) Menus(estadoAtual);
     if (telaAtual == 3) PortaFechada();
     if (telaAtual == 4) exibirLCD(correnteRMS);
-    if (telaAtual == 5) Lampadas();
+    if (telaAtual == 5) Lampadas(estadoAtual);
     if (telaAtual == 6) PortaFechada();
     if (telaAtual == 7) PortaAberta();
     if (telaAtual == 8) PortaTrancada();
@@ -190,7 +186,7 @@ void Intro2()
   tft.println(" START ");
 }
 
-void Menus(int estado) 
+void Menus(uint16_t estado) 
 {
   // DESENHO DAS ESTRELAS-----------------------
   const int numStars = 100;
@@ -277,7 +273,7 @@ void PortaFechada()
 
 void PortaAberta() 
 {
-
+  tft.fillScreen(BLACK);
   tft.setTextColor(GREEN);
   tft.setTextSize(4);
   tft.setCursor(50, 70);
@@ -332,48 +328,45 @@ void PortaAberta()
 
 void PortaTrancada() 
 {
+  tft.fillScreen(BLACK);
 
-  while (true) {
-    tft.fillScreen(BLACK);
+  tft.setTextColor(RED);
+  tft.setTextSize(4);
+  tft.setCursor(50, 80);
+  tft.println("Acesso");
 
-    tft.setTextColor(RED);
-    tft.setTextSize(4);
-    tft.setCursor(50, 80);
-    tft.println("Acesso");
+  tft.setTextColor(RED);
+  tft.setTextSize(4);
+  tft.setCursor(50, 125);
+  tft.println("NEGADO");
 
-    tft.setTextColor(RED);
-    tft.setTextSize(4);
-    tft.setCursor(50, 125);
-    tft.println("NEGADO");
+  tft.setTextColor(RED);
+  tft.setTextSize(2);
+  tft.setCursor(30, 180);
+  tft.println("Insira Novamente");
 
-    tft.setTextColor(RED);
-    tft.setTextSize(2);
-    tft.setCursor(30, 180);
-    tft.println("Insira Novamente");
+  // Desenha o corpo do cadeado
+  tft.fillRoundRect(105, 240, 35, 35, 5, YELLOW);
+  tft.drawRoundRect(105, 240, 35, 35, 5, BLACK);
 
-    // Desenha o corpo do cadeado
-    tft.fillRoundRect(105, 240, 35, 35, 5, YELLOW);
-    tft.drawRoundRect(105, 240, 35, 35, 5, BLACK);
+  // Desenha a haste vertical do cadeado
+  //tft.fillRect(120, 260, 7, 9, WHITE);
 
-    // Desenha a haste vertical do cadeado
-    //tft.fillRect(120, 260, 7, 9, WHITE);
+  // Desenha o arco de fechadura
+  int lockRadius = 13;
+  int lockCenterX = 122.5;
+  int lockCenterY = 240;
+  int lockStartAngle = 180;
+  int lockEndAngle = 360;
 
-    // Desenha o arco de fechadura
-    int lockRadius = 13;
-    int lockCenterX = 122.5;
-    int lockCenterY = 240;
-    int lockStartAngle = 180;
-    int lockEndAngle = 360;
-
-    for (int angle = lockStartAngle; angle <= lockEndAngle; angle++) {
-      float radians = angle * PI / 180.0;
-      int lx1 = lockCenterX + lockRadius * cos(radians);
-      int ly1 = lockCenterY + lockRadius * sin(radians);
-      int lx2 = lockCenterX + (lockRadius - 1) * cos(radians);  // A linha tem 1 pixel de largura, então o raio é reduzido em 1
-      int ly2 = lockCenterY + (lockRadius - 1) * sin(radians);
-      tft.drawLine(lx1, ly1, lx2, ly2, WHITE);
-    }
-    delay(5000);
+  for (int angle = lockStartAngle; angle <= lockEndAngle; angle++) 
+  {
+    float radians = angle * PI / 180.0;
+    int lx1 = lockCenterX + lockRadius * cos(radians);
+    int ly1 = lockCenterY + lockRadius * sin(radians);
+    int lx2 = lockCenterX + (lockRadius - 1) * cos(radians);  // A linha tem 1 pixel de largura, então o raio é reduzido em 1
+    int ly2 = lockCenterY + (lockRadius - 1) * sin(radians);
+    tft.drawLine(lx1, ly1, lx2, ly2, WHITE);
   }
 }
 
@@ -403,7 +396,7 @@ void FumacaDetectada()
   tft.println("!");
 }
 
-void Lampadas() {
+void Lampadas(uint16_t estado) {
   tft.fillScreen(BLACK);
   //Grossura de cada Pixel
   int wallThickness = 10;
@@ -425,8 +418,8 @@ void Lampadas() {
   tft.fillRect(210, 150, 20, wallThickness, WHITE);  //Horizontal
 
   tft.fillRect(130, 160, 50, wallThickness, WHITE);  //Horizontal
-  tft.fillRect(130, 160, wallThickness, 80, WHITE);  //Vertical
-  tft.fillRect(130, 290, wallThickness, 20, WHITE);  //Vertical
+  tft.fillRect(130, 160, wallThickness, 100, WHITE);  //Vertical
+  tft.fillRect(130, 290, wallThickness, 30, WHITE);  //Vertical
 
 
   tft.fillRect(10, 120, 130, wallThickness, WHITE);  //Horizontal
@@ -434,11 +427,36 @@ void Lampadas() {
 
   //Lâmpadas
 
-  tft.fillCircle(70, 70, 10, RED);      //Quarto
-  tft.fillCircle(70, 220, 10, YELLOW);  // SALA
+  tft.fillCircle(70, 70, 10, RED);//Quarto
+  
+  tft.fillCircle(70, 220, 10, YELLOW);// SALA
+
   tft.fillCircle(205, 50, 10, BLUE);    //Quarto de serviço
+  
   tft.fillCircle(205, 120, 10, GREEN);
+  
   tft.fillCircle(185, 220, 10, CYAN);   // Cozinha
+  
+
+ switch (estado)
+  {
+    case 3:
+      tft.drawCircle(70, 70, 15, WHITE);
+      break;
+    case 2:
+      tft.drawCircle(70, 220, 15, WHITE);
+      break;
+    case 4:
+      tft.drawCircle(205, 50, 15, WHITE);
+      break;
+    case 5: 
+      tft.drawCircle(205, 120, 15, WHITE);
+      break;
+    case 1: 
+      tft.drawCircle(185, 220, 15, WHITE);
+      break;
+  }
+  
 }
 
 void exibirLCD(float correnteRMS) 
@@ -487,4 +505,3 @@ void Potencia(float correnteRMS)
   tft.setTextSize(2);
   tft.print(Potencia);
 }
-

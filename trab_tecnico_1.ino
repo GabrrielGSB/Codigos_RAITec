@@ -6,7 +6,7 @@
 
 unsigned long tempoAntigo = 0;
 unsigned long tempoAtual;
-uint16_t  intervalo = 250;
+uint16_t  intervalo = 100;
 
 
 uint16_t byteCtrl    = 0x0000;
@@ -17,7 +17,7 @@ byte byteCtrlL    = 0x00;
 byte acaoAtual    = 0x00;
 byte telaAtual    = 0x00;
 byte estadoAtual  = 0x00;
-byte estadoPorta  = 0x04;
+byte estadoPorta  = 0x06;
 byte alertaFumaca = 0x00;
 
 bool acaoRealizada  = false;
@@ -299,43 +299,45 @@ void controleDisplay()
 
       case 0x03: // Tela atual
         Serial.println("MENU DAS PORTAS");
-        if ((acaoAtual == 0x03) && acaoRealizada == true)
+        if (acaoAtual == 0x03) 
         {
           telaAtual = 0x02;
-          criarByteCtrl();
-          enviarControle();
+          estadoAtual = 0x00;
         }
+        else
+        {
         switch (estadoPorta)
         {
           case 0x04:
             Serial.println("Porta Fechada");
             telaAtual = 0x06;
-            criarByteCtrl();
-            enviarControle();
-            telaAtual = 0x03;
+//            criarByteCtrl();
+//            enviarControle();
+//            telaAtual = 0x03;
             break;
           case 0x05:
             Serial.println("Porta Aberta");
             telaAtual = 0x07;
-            criarByteCtrl();
-            enviarControle();
-            delay(5000);
-            Serial.println("Porta Fechada");
-            telaAtual = 0x06;
-            criarByteCtrl();
-            enviarControle();
+//            criarByteCtrl();
+//            enviarControle();
+//            delay(5000);
+//            Serial.println("Porta Fechada");
+//            telaAtual = 0x06;
+//            criarByteCtrl();
+//            enviarControle();
             break;
           case 0x06:
             Serial.println("Porta Trancada");
             telaAtual = 0x08;
-            criarByteCtrl();
-            enviarControle();
-            delay(5000);
-            Serial.println("Porta Fechada");
-            telaAtual = 0x06;
-            criarByteCtrl();
-            enviarControle();
+//            criarByteCtrl();
+//            enviarControle();
+//            delay(5000);
+//            Serial.println("Porta Fechada");
+//            telaAtual = 0x06;
+//            criarByteCtrl();
+//            enviarControle();
             break;
+        }
         }
         break;
 
@@ -349,66 +351,85 @@ void controleDisplay()
         Serial.println("MENU DAS LAMPADAS");
         switch (estadoAtual)
         {
-          case 0x00:
+          case 0x02:
             Serial.println("LAMPADA 1");
             if (acaoRealizada == true)
             {
               switch (acaoAtual)
               {
                 case 0x01:
-                  estadoAtual = 0x01;
+                  estadoAtual = 0x03;
                   break;
                 case 0x03:
                   estadoAtual = 0x02; //Voltar para o menu principal
                   telaAtual   = 0x02; //Voltar para o seu Icone 
                   break;
                 case 0x02:
-                  estadoAtual = 0x04;
-                  break;
-              }
-            }
-            break;
-          case 0x01: // Estado atual
-            Serial.println("LAMPADA 2");
-            if (acaoRealizada == true)
-            {
-              switch (acaoAtual)
-              {
-                case 0x02:
-                  estadoAtual = 0x02;
-                  break;
-                case 0x03:
-                  estadoAtual = 0x00;
-                  break;
-              }
-            }
-            break;
-          case 0x02: // Estado atual
-            Serial.println("LAMPADA 3");
-            if (acaoRealizada == true)
-            {
-              switch (acaoAtual)
-              {
-                case 0x02:
-                  estadoAtual = 0x03;
-                  break;
-                case 0x03:
-                  estadoAtual = 0x00;
-                  break;
-                case 0x04:
                   estadoAtual = 0x01;
                   break;
               }
             }
             break;
           case 0x03: // Estado atual
+            Serial.println("LAMPADA 2");
+            if (acaoRealizada == true)
+            {
+              switch (acaoAtual)
+              {
+                case 0x02:
+                  estadoAtual = 0x04;
+                  break;
+                case 0x03:
+                  estadoAtual = 0x02;
+                  break;
+              }
+            }
+            break;
+          case 0x04: // Estado atual
+            Serial.println("LAMPADA 3");
+            if (acaoRealizada == true)
+            {
+              switch (acaoAtual)
+              {
+                case 0x02:
+                  estadoAtual = 0x00;
+                  break;
+                case 0x03:
+                  estadoAtual = 0x02;
+                  break;
+                case 0x04:
+                  estadoAtual = 0x03;
+                  break;
+              }
+            }
+            break;
+          case 0x00: // Estado atual
             Serial.println("LAMPADA 4");
             if (acaoRealizada == true)
             {
               switch (acaoAtual)
               {
                 case 0x03:
+                  estadoAtual = 0x01;
+                  break;
+                case 0x04:
                   estadoAtual = 0x04;
+                  break;
+              }
+            }
+            break;
+          case 0x01: // Estado atual
+            Serial.println("LAMPADA 5");
+            if (acaoRealizada == true)
+            {
+              switch (acaoAtual)
+              {
+                case 0x01:
+                  estadoAtual = 0x00;
+                  break;
+                case 0x03:
+                  estadoAtual = 0x02; // Voltar ao menu anterior
+                  telaAtual   = 0x02; // Voltar ao seu Icone
                   break;
                 case 0x04:
                   estadoAtual = 0x02;
@@ -416,27 +437,48 @@ void controleDisplay()
               }
             }
             break;
-          case 0x04: // Estado atual
-            Serial.println("LAMPADA 5");
-            if (acaoRealizada == true)
-            {
-              switch (acaoAtual)
-              {
-                case 0x01:
-                  estadoAtual = 0x03;
-                  break;
-                case 0x03:
-                  estadoAtual = 0x02; // Voltar ao menu anterior
-                  telaAtual   = 0x02; // Voltar ao seu Icone
-                  break;
-                case 0x04:
-                  estadoAtual = 0x00;
-                  break;
-              }
-            }
-            break;
         }
         break;
+
+      case 0x06: 
+        if (acaoRealizada == true)
+        {
+          switch (acaoAtual)
+          {
+            case 0x03:
+              telaAtual   = 0x02;
+              estadoAtual = 0x00; 
+              break;  
+          }
+        }
+        break;
+        
+      case 0x07: 
+        if (acaoRealizada == true)
+        {
+          switch (acaoAtual)
+          {
+            case 0x03:
+              telaAtual = 0x02;
+              estadoAtual = 0x00; 
+              break;  
+          }
+        }
+        break;
+      case 0x08: 
+        if (acaoRealizada == true)
+        {
+          switch (acaoAtual)
+          {
+            case 0x03:
+              telaAtual = 0x02;
+              estadoAtual = 0x00; 
+              break;  
+          }
+        }
+        break;    
     }
+          
   }
+    
 }
