@@ -3,59 +3,84 @@
 // Arduino Guide: https://randomnerdtutorials.com/arduino-mpu-6050-accelerometer-gyroscope/
 #include "Drone.h"
 
-//*******************************ORGANIZAÇÃO DAS VARIÁVEIS NECESSÁRIAS******************************************
-int MotorVeloci1, MotorVeloci2, MotorVeloci3, MotorVeloci4; // Variáveis de controle da velocidade dos motores
-
-int CH1, CH2, CH3, CH4; // Variáveis que receberam os estado do controle remoto
-
-int ThrottleIdle   = 257; // Valor mínimo para velocidade dos motores durante o voo
-int ThrottleCutOff = 257; // Valor para parar os motores
-
-int count = 0;
-int Timer1 = 0, Timer2 = 0;
-
-float RateCalibrationRoll, RateCalibrationPitch, RateCalibrationYaw; // Variáveis de controle do sensor giroscópio...
-float AceX, AceY, AceZ, Temp; 										 // ...
-float GyrXc = 0; 													 // ...
-float GyrYc = 0; 													 // ...
-float GyrZc = 0; 													 // ...
-float AngleRoll, AnglePitch; 										 // ...
-
-bool calibration = false; // Variável de controle do estado de calibração
-
-float KalmanGain; 											   // Variáveis de controle do filtro Kalman...
-float KalmanAngleRoll  = 0, KalmanUncertaintyAngleRoll  = 2*2; //...
-float KalmanAnglePitch = 0, KalmanUncertaintyAnglePitch = 2*2; //...
-float Kalman1DOutput[] = {0,0}; 							   // Saída do filtro de Kalman
-
-uint32_t LoopTimer; // Definição do timer que vai controlar a freq de controle do motor
-
-float RateRoll         , RatePitch         , RateYaw;                  // Variáveis de controle do controlador PID interno...
-float InputRoll        , InputThrottle     , InputPitch    , InputYaw; // baseado na taxa de variação angular...
-float DesiredRateRoll  , DesiredRatePitch  , DesiredRateYaw;		   // ...
-float ErrorRateRoll = 0, ErrorRatePitch = 0, ErrorRateYaw = 0;		   // ...
+//*****************************************ORGNIAZAÇÃO DO DRONE*******************************************
+Drone::Drone(const int &serial, const uint8_t &p1, const uint8_t &p2, const uint8_t &p3, 
+			const uint8_t &p4, const uint8_t &p5, const uint8_t &p6, const uint8_t &p7, 
+			const uint8_t &p8) : INPin1(p1), INPin2(p2), INPin3(p3), INPin4(p4), OUTPin5(p5), 
+			OUTPin6(p6), OUTPin7(p7), OUTPin8(p8)
+{
+	
+	//ESTADO DE CALIBRAÇÃO INICIAL
+	calibration = false;
 
 
-float PrevErrorRateRoll = 0, PrevErrorRatePitch = 0, PrevErrorRateYaw = 0; // Variáveis de armazenamento do erro anterior para  PID "RATE MODE" ...
-float PrevItermRateRoll = 0, PrevItermRatePitch = 0, PrevItermRateYaw = 0; // ...
+	//VALORES DOS MOTORES
+	ThrottleIdle   = 257; // Valor mínimo para velocidade dos motores durante o voo
+	ThrottleCutOff = 257; // Valor para parar os motores
 
-float PIDReturn[] = {0, 0, 0}; // Saída da função PID
 
-float PRateRoll = 0.6,  PRatePitch = PRateRoll, PRateYaw  = 1;  // Definição das variáveis necessárias para o...
-float IRateRoll = 3.5,  IRatePitch = IRateRoll, IRateYaw  = 6; // controlador PID "ANGLE MODE", junto com os valores de...
-float DRateRoll = 0.03, DRatePitch = DRateRoll, DRateYaw  = 0;   // P, I e D, para o ajuste do controlador
+	//GIROSCOPIO
+	GyrXc = GyrYc = GyrZc = 0;
 
-float DesiredAngleRoll, DesiredAnglePitch;     // Variáveis de angulo desejado para PID "ANGLE MODE"...
-float ErrorAngleRoll  , ErrorAnglePitch;       // Variáveis de erro...
-float PrevErrorAngleRoll = 0, PrevErrorAnglePitch = 0; // Variáveis de erro prévio...
-float PrevItermAngleRoll = 0, PrevItermAnglePitch = 0; // ...
 
-float PAngleRoll = 2, PAnglePitch = PAngleRoll; // Constantes P, I e D para configuração do controledor...
-float IAngleRoll = 0, IAnglePitch = IAngleRoll; // ...
-float DAngleRoll = 0, DAnglePitch = DAngleRoll; // ...
+	//FILTRO DE KALMAN
+	KalmanGain = 0;
+	KalmanAngleRoll  = 0, KalmanUncertaintyAngleRoll  = 2*2;
+	KalmanAnglePitch = 0, KalmanUncertaintyAnglePitch = 2*2;
+
+
+	//PID
+		//PID Interno
+		ErrorRateRoll = ErrorRatePitch = ErrorRateYaw = 0;
+
+		//DADOS PARA O PID
+			// Variáveis de erro prévio...
+			PrevErrorAngleRoll = PrevErrorAnglePitch = 0; // Angle
+			PrevItermAngleRoll = PrevItermAnglePitch = 0;
+
+			PrevErrorRateRoll = PrevErrorRatePitch = PrevErrorRateYaw = 0; // Rate
+			PrevItermRateRoll = PrevItermRatePitch = PrevItermRateYaw = 0;
+	
+		//Constantes PID
+			//PID Angle
+			PAngleRoll = PAnglePitch = 2; // P
+
+			IAngleRoll = IAnglePitch = 0; // I
+
+			DAngleRoll = DAnglePitch = 0; // D
+
+		//PID Rate 
+		PRateRoll = PRatePitch = 0.6f; PRateYaw  = 1; // P
+		IRateRoll = IRatePitch = 3.5f; IRateYaw  = 6; // I
+		DRateRoll = DRatePitch = 0.03f; DRateYaw  = 0; // D
+
+
+	//OUTROS
+	Timer1 = Timer2 = count = 0;
+
+
+	//DECLARANDO PIN'S E PORTA SERIAL
+	Serial.begin(serial);
+	readPWMSetup(INPin1);
+	readPWMSetup(INPin2);
+	readPWMSetup(INPin3);
+	readPWMSetup(INPin4);
+
+	setupPWM(250, 10, OUTPin5, 0);
+	setupPWM(250, 10, OUTPin6, 1);
+	setupPWM(250, 10, OUTPin7, 2);
+	setupPWM(250, 10, OUTPin8, 3);
+
+	//CALIBRANDO...
+	MPUconfigSetup();
+	CalibrarMPU();
+	
+}
+
 
 //***********************************FILTRO KALMAN DE 1 DIMENSÃO******************************************
-void Drone::Kalman1D(float KalmanState,float KalmanUncertainty,float KalmanInput,float KalmanMeasurement){
+void Drone::Kalman1D(float &KalmanState,float &KalmanUncertainty, const float &KalmanInput, 
+					 const float &KalmanMeasurement){
 
 	KalmanState       = KalmanState + 0.004*KalmanInput;
 	KalmanUncertainty = KalmanUncertainty + 0.004*0.004*4*4;
@@ -63,31 +88,11 @@ void Drone::Kalman1D(float KalmanState,float KalmanUncertainty,float KalmanInput
 	KalmanState       = KalmanState + KalmanGain*(KalmanMeasurement - KalmanState);
 	KalmanUncertainty = (1 - KalmanGain)*KalmanUncertainty;
 	
-	Kalman1DOutput[0] = KalmanState;
-	Kalman1DOutput[1] = KalmanUncertainty;
-}
-//********************************FUNÇÃO GERAL PARA O CONTROLADOR PID*************************************
-void Drone::pid_equation(float Error, float P , float I, float D, float PrevError, float PrevIterm){
-
-	float Pterm = P*Error;
-	float Iterm = PrevIterm + I*(Error + PrevError)*0.004/2;
-
-	if      (Iterm >  400) Iterm = 400;
-	else if (Iterm < -400) Iterm = -400;
-
-	float Dterm     = D*(Error - PrevError)/0.004;
-	float PIDOutput = Pterm + Iterm + Dterm;
-
-	if      (PIDOutput >  400) PIDOutput =  400;
-	else if (PIDOutput < -400) PIDOutput = -400;
-
-	PIDReturn[0] = PIDOutput;
-	PIDReturn[1] = Error;
-	PIDReturn[2] = Iterm;
 }
 //********************************************************************************************************
-void Drone::MainControlSetup(int serial, int pin1, int pin2, int pin3, int pin4,
-							 int pin5,int pin6,int pin7, int pin8) {
+void Drone::MainControlSetup(const int &serial, const int &pin1, const int &pin2, const int &pin3, 
+                             const int &pin4, const int &pin5, const int &pin6, const int &pin7, 
+                             const int &pin8) {
 	Serial.begin(serial);
 	readPWMSetup(pin1);
 	readPWMSetup(pin2);
@@ -103,37 +108,29 @@ void Drone::MainControlSetup(int serial, int pin1, int pin2, int pin3, int pin4,
 	CalibrarMPU();
 }
 //********************************************************************************************************
-void Drone::MainControlLoop(int pinPWM_Read1, int pinPWM_Read2, int pinPWM_Read3, int pinPWM_Read4){
+void Drone::MainControlLoop(){
 	
 	// RateRoll  -= RateCalibrationRoll;  // Atualização da taxa de variação angular com... 
 	// RatePitch -= RateCalibrationPitch; // os valores vindos do sensor giroscópio depois...
  	// RateYaw   -= RateCalibrationYaw;   // de passada a calibração
 
 	//##############################FILTRO DE KALMAN############################
-	Kalman1D(KalmanAngleRoll, KalmanUncertaintyAngleRoll, RateRoll, AngleRoll);     // chamada da função do filtro afim...
 
-	KalmanAngleRoll             = Kalman1DOutput[0];                                // de obter o ângulo sem ruído
-	KalmanUncertaintyAngleRoll  = Kalman1DOutput[1];                                // ...
+	//Filtrando os Angulos de Pitch e Roll
+	Kalman1D(KalmanAngleRoll, KalmanUncertaintyAngleRoll, RateRoll, AngleRoll);   
   
-  	Kalman1D(KalmanAnglePitch, KalmanUncertaintyAnglePitch, RatePitch, AnglePitch); // ...
-
-	KalmanAnglePitch            = Kalman1DOutput[0];                                // ...
-	KalmanUncertaintyAnglePitch = Kalman1DOutput[1];                                // ...
+  	Kalman1D(KalmanAnglePitch, KalmanUncertaintyAnglePitch, RatePitch, AnglePitch); 
 
 	//##############################LEITURA DO CONTROLE############################
-	CH1 = readPWMLoop(pinPWM_Read1); // obtenção dos comandos vindos do controle remoto...
-	CH2 = readPWMLoop(pinPWM_Read2); // ...
-	CH3 = readPWMLoop(pinPWM_Read3); // ...
-	CH4 = readPWMLoop(pinPWM_Read4); // ...
 
-	Serial.print("Canal 1: ");
-	Serial.println(CH1);
-	Serial.print("Canal 2: ");
-	Serial.println(CH2);
-	Serial.print("Canal 3: ");
-	Serial.println(CH3);
-	Serial.print("Canal 4: ");
-	Serial.println(CH4);
+	CH1 = readPWMLoop(INPin1); // obtenção dos comandos vindos do controle remoto...
+	CH2 = readPWMLoop(INPin2); // ...
+	CH3 = readPWMLoop(INPin3); // ...
+	CH4 = readPWMLoop(INPin4); // ...
+
+
+	//Serial.printf("Canal 1: %d\nCanal 2: %d\nCanal 3: %d\nCanal 4: %d\n", CH1, CH2,CH3,CH4);
+
 
 	DesiredAngleRoll  = 0.10*(CH1 - 1500); // Valores desejados de ângulo obtidos...
 	DesiredAnglePitch = 0.10*(CH2 - 1500); // a partir do controle remoto
@@ -141,45 +138,17 @@ void Drone::MainControlLoop(int pinPWM_Read1, int pinPWM_Read2, int pinPWM_Read3
 	InputThrottle     = CH3; 			   // Potencia dos motores para movimento vertical
 	DesiredRateYaw    = 0.15*(CH4 - 1500); // Valor do ângulo para giro no eixo Z
 
-	ErrorAngleRoll  = DesiredAngleRoll  - KalmanAngleRoll; 	// Calculo do erro de ângulo Roll e Pitch...
-	ErrorAnglePitch = DesiredAnglePitch - KalmanAnglePitch; // ...
+	ErrorAngleRoll    = DesiredAngleRoll  - KalmanAngleRoll; 	// Calculo do erro de ângulo Roll e Pitch...
+	ErrorAnglePitch   = DesiredAnglePitch - KalmanAnglePitch; // ...
 
 	//##############################APLICAÇÃO DO PID############################
-	pid_equation(ErrorAngleRoll, PAngleRoll, IAngleRoll, DAngleRoll, PrevErrorAngleRoll, PrevItermAngleRoll); 
 
-	DesiredRateRoll        = PIDReturn[0]; // Chamada da função PID para obtenção da taxa de variação angular desejada...
-	PrevErrorAngleRoll     = PIDReturn[1]; // ... 
-	PrevItermAngleRoll     = PIDReturn[2]; // ...
+	pid_angle(); //Faz o PID nos angulo
 
-	pid_equation(ErrorAnglePitch, PAnglePitch, IAnglePitch, DAnglePitch, PrevErrorAnglePitch, PrevItermAnglePitch);
-
-	DesiredRatePitch       = PIDReturn[0]; // ... 
-	PrevErrorAnglePitch    = PIDReturn[1]; // ...
-	PrevItermAnglePitch    = PIDReturn[2]; // ...
-
-	ErrorRateRoll  = DesiredRateRoll  - RateRoll;  // Cálculo dos erros de roll, pitch e yaw...
-	ErrorRatePitch = DesiredRatePitch - RatePitch; // ...
-	ErrorRateYaw   = DesiredRateYaw   - RateYaw;   // ...
-
-	pid_equation(ErrorRateRoll, PRateRoll, IRateRoll, DRateRoll, PrevErrorRateRoll, PrevItermRateRoll);
-
-	InputRoll          = PIDReturn[0]; // Chamada da função PID para obtenção do ângulo de roll...
-	PrevErrorRateRoll  = PIDReturn[1]; // ...
-	PrevItermRateRoll  = PIDReturn[2]; // ...
-
-	pid_equation(ErrorRatePitch, PRatePitch, IRatePitch, DRatePitch, PrevErrorRatePitch, PrevItermRatePitch);
-
-	InputPitch         = PIDReturn[0]; // Chamada da função PID para obtenção do ângulo de pitch...
-	PrevErrorRatePitch = PIDReturn[1]; // ...
-	PrevItermRatePitch = PIDReturn[2]; // ...
-
-	pid_equation(ErrorRateYaw, PRateYaw, IRateYaw, DRateYaw, PrevErrorRateYaw, PrevItermRateYaw);
-
-	InputYaw           = PIDReturn[0]; // Chamada da função PID para obtenção do ângulo de yaw...
-	PrevErrorRateYaw   = PIDReturn[1]; // ... 
-	PrevItermRateYaw   = PIDReturn[2]; // ...
-
+	pid_rate(); //Faz o PID na variação dos angulos
+	
 	//##############################CONTROLE DOS MOTORES############################
+
 	if (InputThrottle > 1800) InputThrottle = 1800; // Medida de segurança para manter a potência máxima de subida a 80% 
 
 	MotorVeloci1 = 1.024*(InputThrottle - InputRoll - InputPitch - InputYaw); // Cálculo da entrada para os motores a partir...
@@ -188,6 +157,7 @@ void Drone::MainControlLoop(int pinPWM_Read1, int pinPWM_Read2, int pinPWM_Read3
 	MotorVeloci4 = 1.024*(InputThrottle + InputRoll - InputPitch + InputYaw); // ...
 	
 	//##############################MEDIDAS DE SEGURANÇA############################
+
 	if (MotorVeloci1 > 2000) MotorVeloci1 = 1999; // Medida de segurança para evitar extrapolação da potência máxima dos motores
 	if (MotorVeloci2 > 2000) MotorVeloci2 = 1999; // ... 
 	if (MotorVeloci3 > 2000) MotorVeloci3 = 1999; // ... 
@@ -198,10 +168,10 @@ void Drone::MainControlLoop(int pinPWM_Read1, int pinPWM_Read2, int pinPWM_Read3
 	if (MotorVeloci3 < ThrottleIdle) MotorVeloci3 = ThrottleIdle; // ...
 	if (MotorVeloci4 < ThrottleIdle) MotorVeloci4 = ThrottleIdle; // ...
 
-	int speed1 = map(MotorVeloci1,1000,2000,257,385);
-	int speed2 = map(MotorVeloci2,1000,2000,257,385);
-	int speed3 = map(MotorVeloci3,1000,2000,257,385);
-	int speed4 = map(MotorVeloci4,1000,2000,257,385);
+	speed1 = map(MotorVeloci1,1000,2000,257,385);
+	speed2 = map(MotorVeloci2,1000,2000,257,385);
+	speed3 = map(MotorVeloci3,1000,2000,257,385);
+	speed4 = map(MotorVeloci4,1000,2000,257,385);
 
 
 	if (CH3 < 1050) { // Medida de segurança para ter certeza do desligamento dos motores
@@ -216,30 +186,12 @@ void Drone::MainControlLoop(int pinPWM_Read1, int pinPWM_Read2, int pinPWM_Read3
 	controlSpeed(speed2,1);
 	controlSpeed(speed3,2);
 	controlSpeed(speed4,3);
+  	
+	//Print dos valores para visualização do input aos motores
+	//Serial.printf("Motor1: %d, Motor2 %d, Motor3 %d, Motor4 %d \n", MotorVeloci1, MotorVeloci2, MotorVeloci3, MotorVeloci4);
 
-	// Serial.print("Motor1:");   //Print dos valores para visualização do input aos motores
-	// Serial.print(MotorVeloci1);
-	// Serial.print(",");
-	// Serial.print("Motor2:");
-	// Serial.print(MotorVeloci2);
-	// Serial.print(",");
-	// Serial.print("Motor3:");
-	// Serial.print(MotorVeloci3);
-	// Serial.print(",");
-	// Serial.print("Motor4:");
-	// Serial.println(MotorVeloci4);
-
-	Serial.print("Motor1:");   //Print dos valores para visualização do input aos motores
-	Serial.print(speed1);
-	Serial.println(" ");
-	Serial.print("Motor2:");
-	Serial.print(speed2);
-	Serial.println(" ");
-	Serial.print("Motor3:");
-	Serial.print(speed3);
-	Serial.println(" ");
-	Serial.print("Motor4:");
-	Serial.println(speed4);
+	//Print dos valores para visualização do input aos motores
+	//Serial.printf("Motor1: %d, Motor2 %d, Motor3 %d, Motor4 %d \n", speed1, speed2, speed3, speed4);
 
 	while (micros() - LoopTimer < 4000); // tempo de espera para novo loop de controle... 
 	LoopTimer = micros(); 				 // a frequência usada é de 250Hz
@@ -273,8 +225,7 @@ void Drone::CalibrarMPU(){
 
  	for (int Passo = 0 ; Passo < 2000; Passo++) {
 
-		Serial.print("Calibrando: ");
-		Serial.println(Passo);
+		Serial.printf("Calibrando: %d\n", Passo);
 
 		MPUgetSignalsLoop();
 
@@ -319,75 +270,35 @@ void Drone::DisplaySerialMpuData(){
 	
 	if ((millis() - Timer1) >= 800){
 		Timer1 = millis();
-		Serial.print("AceX: ");
-		Serial.print(AceX);
-		Serial.print(" ");
-		Serial.print("AceY: ");
-		Serial.print(AceY);
-		Serial.print(" ");
-		Serial.print("AceZ: ");
-		Serial.print(AceZ);
-		Serial.print(" ");
 		
-		Serial.println(" ");
-		
-		Serial.print("RateRoll: ");
-		Serial.print(RateRoll);
-		Serial.print(" ");
-		Serial.print("RatePitch: ");
-		Serial.print(RatePitch);
-		Serial.print(" ");
-		Serial.print("RateYaw: ");
-		Serial.print(RateYaw);
-		
-		Serial.println(" ");
-		Serial.println(" ");
-		
-		Serial.print("Angulo Roll: ");
-		Serial.print(AngleRoll);
-		
-		Serial.println(" ");
-		
-		Serial.print("Angulo Pitch: ");
-		Serial.print(AnglePitch);
-		
-		Serial.println(" ");
-	}
+		Serial.printf("AceX %f AceY %f, AceZ %f \n", AceX, AceY, AceZ);
 	
+		Serial.printf("RateRoll: %f RatePitch %f RateYaw %f \n", RateRoll, RatePitch, RateYaw);
+		
+		Serial.printf("Angulo Roll %f\n Angulo Pitch %f\n", AngleRoll, AnglePitch);
+		
+	}
 	
 }
 //********************************************************************************************************
 void Drone::DisplayPlotterMpuData(){
 
 	Kalman1D(KalmanAngleRoll, KalmanUncertaintyAngleRoll, RateRoll, AngleRoll);     // chamada da função do filtro afim...
-
-	KalmanAngleRoll             = Kalman1DOutput[0];                                // de obter o ângulo sem ruído
-	KalmanUncertaintyAngleRoll  = Kalman1DOutput[1];                                // ...
   
   	Kalman1D(KalmanAnglePitch, KalmanUncertaintyAnglePitch, RatePitch, AnglePitch); // ...
 
-	KalmanAnglePitch            = Kalman1DOutput[0];                                // ...
-	KalmanUncertaintyAnglePitch = Kalman1DOutput[1];
 
 	if ((millis() - Timer2) >= 10){
 		Timer2 = millis();
-		Serial.print("Angle_Roll:");
-		Serial.print(AngleRoll);
-		Serial.print(",");
-		Serial.print("Angle_Pitch:");
-		Serial.print(AnglePitch);
-		Serial.print(",");
-		Serial.print("Kalman_Angle_Roll:");
-		Serial.print(KalmanAngleRoll);
-		Serial.print(",");
-		Serial.print("Kalman_Angle_Pitch:");
-		Serial.println(KalmanAnglePitch);
 		
+		Serial.printf("Angle_Roll: %f, Angle_Pitch: %f, Kalman_Angle_Roll: %f, Kalman_Angle_Pitch: %f\n", 
+		AngleRoll, AnglePitch, KalmanAngleRoll, KalmanAnglePitch);
+
 		//Serial.println(GyrZ);
 	}
 }
 //********************************************************************************************************
-void Drone::setupPWM(int freq, int resolution, int pin, int ch){
+void Drone::setupPWM(const int &freq, const int &resolution, const int &pin, const int &ch){
   pinMode(pin, OUTPUT); // Definição do pino de saída do PWM de controle do motor
   ledcAttachPin(pin, ch); // Funções para definição do PWM na ESP32
   ledcSetup(ch, freq, resolution);// ...
@@ -395,16 +306,13 @@ void Drone::setupPWM(int freq, int resolution, int pin, int ch){
 //********************************************************************************************************
 // Função para controlar a velocidade dos motores
 // min_sped=257 max_sped=511 para resolução = 10 bits
-void Drone::controlSpeed(int speed, int ch){
+void Drone::controlSpeed(int &speed, int ch){
 	ledcWrite(ch, speed); // Função para mudança do PWM na ESP32
-}
-int Drone::mot1(){
-	return MotorVeloci1;
 }
 //********************************************************************************************************
 // Função para adequar os pinos que vão receber o PWM do controlador
-void Drone::readPWMSetup(int pin1){
-	pinMode(pin1, INPUT);
+void Drone::readPWMSetup(const uint8_t &PinX){
+	pinMode(PinX, INPUT);
 }
 //********************************************************************************************************
 // Função para ler o valor do PWM enviado pelo controlador e printa-lo no monitor serial
@@ -416,10 +324,50 @@ void Drone::readPWMLoop_SM(int pinX, int ch){
 	Serial.print(" = ");	
 	Serial.println(pulseIn(pinX, HIGH));
 	Serial.println(" ");
-}
-//********************************************************************************************************
-int Drone::readPWMLoop(int pinX){
 
-	return pulseIn(pinX, HIGH); 
 }
 //********************************************************************************************************
+int Drone::readPWMLoop(const uint8_t &PinX){
+
+	return pulseIn(PinX, HIGH); 
+}
+//********************************FUNÇÃO GERAL PARA O CONTROLADOR PID*************************************
+void Drone::pid_equation(const float &Error, const float &P , const float &I, const float &D, 
+						 float &PrevError, float &PrevIterm, float &Angle){
+
+	float Pterm = P*Error;
+	float Iterm = PrevIterm + I*(Error + PrevError)*0.004/2;
+
+	if      (Iterm >  400) Iterm = 400;
+	else if (Iterm < -400) Iterm = -400;
+
+	float Dterm     = D*(Error - PrevError)/0.004;
+	float PIDOutput = Pterm + Iterm + Dterm;
+
+	if      (PIDOutput >  400) PIDOutput =  400;
+	else if (PIDOutput < -400) PIDOutput = -400;
+
+	Angle     = PIDOutput;   //Obtendo os Angulos roll, pitch e yaw
+	PrevError = Error;
+	PrevIterm = Iterm;
+
+}
+void Drone::pid_angle(){
+	pid_equation(ErrorAngleRoll, PAngleRoll, IAngleRoll, DAngleRoll, PrevErrorAngleRoll, PrevItermAngleRoll, DesiredAngleRoll); 
+
+	pid_equation(ErrorAnglePitch, PAnglePitch, IAnglePitch, DAnglePitch, PrevErrorAnglePitch, PrevItermAnglePitch, DesiredAnglePitch);
+
+}
+//********************************************************************************************************
+void Drone::pid_rate(){
+	ErrorRateRoll  = DesiredRateRoll  - RateRoll;  // Cálculo dos erros de roll, pitch e yaw...
+	ErrorRatePitch = DesiredRatePitch - RatePitch; // ...
+	ErrorRateYaw   = DesiredRateYaw   - RateYaw;   // ...
+
+	pid_equation(ErrorRateRoll, PRateRoll, IRateRoll, DRateRoll, PrevErrorRateRoll, PrevItermRateRoll, InputRoll);
+
+	pid_equation(ErrorRatePitch, PRatePitch, IRatePitch, DRatePitch, PrevErrorRatePitch, PrevItermRatePitch, InputPitch);
+
+	pid_equation(ErrorRateYaw, PRateYaw, IRateYaw, DRateYaw, PrevErrorRateYaw, PrevItermRateYaw, InputYaw);
+
+}
