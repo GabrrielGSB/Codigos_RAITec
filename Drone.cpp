@@ -4,11 +4,7 @@
 #include "Drone.h"
 
 //*****************************************ORGNIAZAÇÃO DO DRONE*******************************************
-Drone::Drone(const int &serial, const uint8_t &p1, const uint8_t &p2, const uint8_t &p3, 
-			const uint8_t &p4, const uint8_t &p5, const uint8_t &p6, const uint8_t &p7, 
-			const uint8_t &p8) : INPin1(p1), INPin2(p2), INPin3(p3), INPin4(p4), OUTPin5(p5), 
-			OUTPin6(p6), OUTPin7(p7), OUTPin8(p8)
-{
+Drone::Drone(){
 	
 	//ESTADO DE CALIBRAÇÃO INICIAL
 	calibration = false;
@@ -50,30 +46,13 @@ Drone::Drone(const int &serial, const uint8_t &p1, const uint8_t &p2, const uint
 			DAngleRoll = DAnglePitch = 0; // D
 
 		//PID Rate 
-		PRateRoll = PRatePitch = 0.6f; PRateYaw  = 1; // P
-		IRateRoll = IRatePitch = 3.5f; IRateYaw  = 6; // I
+		PRateRoll = PRatePitch = 0.6f; PRateYaw   = 1; // P
+		IRateRoll = IRatePitch = 3.5f; IRateYaw   = 6; // I
 		DRateRoll = DRatePitch = 0.03f; DRateYaw  = 0; // D
 
 
 	//OUTROS
 	Timer1 = Timer2 = count = 0;
-
-
-	//DECLARANDO PIN'S E PORTA SERIAL
-	Serial.begin(serial);
-	readPWMSetup(INPin1);
-	readPWMSetup(INPin2);
-	readPWMSetup(INPin3);
-	readPWMSetup(INPin4);
-
-	setupPWM(250, 10, OUTPin5, 0);
-	setupPWM(250, 10, OUTPin6, 1);
-	setupPWM(250, 10, OUTPin7, 2);
-	setupPWM(250, 10, OUTPin8, 3);
-
-	//CALIBRANDO...
-	MPUconfigSetup();
-	CalibrarMPU();
 	
 }
 
@@ -93,7 +72,12 @@ void Drone::Kalman1D(float &KalmanState,float &KalmanUncertainty, const float &K
 void Drone::MainControlSetup(const int &serial, const int &pin1, const int &pin2, const int &pin3, 
                              const int &pin4, const int &pin5, const int &pin6, const int &pin7, 
                              const int &pin8) {
-	Serial.begin(serial);
+	INPin1 = pin1;
+  INPin2 = pin2;
+  INPin3 = pin3;
+  INPin4 = pin4;
+  
+  Serial.begin(serial);
 	readPWMSetup(pin1);
 	readPWMSetup(pin2);
 	readPWMSetup(pin3);
@@ -119,7 +103,7 @@ void Drone::MainControlLoop(){
 	//Filtrando os Angulos de Pitch e Roll
 	Kalman1D(KalmanAngleRoll, KalmanUncertaintyAngleRoll, RateRoll, AngleRoll);   
   
-  	Kalman1D(KalmanAnglePitch, KalmanUncertaintyAnglePitch, RatePitch, AnglePitch); 
+  Kalman1D(KalmanAnglePitch, KalmanUncertaintyAnglePitch, RatePitch, AnglePitch); 
 
 	//##############################LEITURA DO CONTROLE############################
 
@@ -191,7 +175,7 @@ void Drone::MainControlLoop(){
 	//Serial.printf("Motor1: %d, Motor2 %d, Motor3 %d, Motor4 %d \n", MotorVeloci1, MotorVeloci2, MotorVeloci3, MotorVeloci4);
 
 	//Print dos valores para visualização do input aos motores
-	//Serial.printf("Motor1: %d, Motor2 %d, Motor3 %d, Motor4 %d \n", speed1, speed2, speed3, speed4);
+	Serial.printf("Motor1: %d, Motor2 %d, Motor3 %d, Motor4 %d \n", speed1, speed2, speed3, speed4);
 
 	while (micros() - LoopTimer < 4000); // tempo de espera para novo loop de controle... 
 	LoopTimer = micros(); 				 // a frequência usada é de 250Hz
@@ -300,8 +284,8 @@ void Drone::DisplayPlotterMpuData(){
 //********************************************************************************************************
 void Drone::setupPWM(const int &freq, const int &resolution, const int &pin, const int &ch){
   pinMode(pin, OUTPUT); // Definição do pino de saída do PWM de controle do motor
-  ledcAttachPin(pin, ch); // Funções para definição do PWM na ESP32
   ledcSetup(ch, freq, resolution);// ...
+  ledcAttachPin(pin, ch); // Funções para definição do PWM na ESP32
 }
 //********************************************************************************************************
 // Função para controlar a velocidade dos motores

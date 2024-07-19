@@ -14,16 +14,14 @@ private:
   
 public:
 
-    Drone(const int &serial, const uint8_t &p1, const uint8_t &p2, const uint8_t &p3, 
-		  const uint8_t &p4, const uint8_t &p5, const uint8_t &p6, const uint8_t &p7, 
-          const uint8_t &p8);
+    Drone();
 
 
     bool calibration; //Calibração dos controles.
 
 
-    uint8_t INPin1,INPin2, INPin3, INPin4,      //Valores ods pinos.
-            OUTPin5, OUTPin6, OUTPin7, OUTPin8;
+    uint8_t INPin1,INPin2, INPin3, INPin4;     //Valores ods pinos.
+
 
     uint32_t LoopTimer; // Definição do timer que vai controlar a freq de controle do motor.
 
@@ -60,8 +58,8 @@ public:
         
 
 
-	void Kalman1D(float &KalmanState, float &KalmanUncertainty,
-                  const float &KalmanInput, const float &KalmanMeasurement);
+	void Kalman1D(float &KalmanState,float &KalmanUncertainty, const float &KalmanInput, 
+					      const float &KalmanMeasurement);
     void CalibrarMPU();
     void MPUgetSignalsLoop();
     void MPUconfigSetup();
