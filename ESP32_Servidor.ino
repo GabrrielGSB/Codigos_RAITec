@@ -1,13 +1,17 @@
 #include <WiFi.h>
-
-// Configurações do ponto de acesso (AP)
-const char *ssid = "ESP32_Server";
-const char *password = "123456789";
-
 // Porta do servidor
 WiFiServer server(80);
 
-void setup() {
+void LoopCore0(void *pvParameters);
+
+String mensagem;
+
+// Configurações do ponto de acesso (AP)
+const char *ssid     = "ESP32_Server";
+const char *password = "123456789";
+
+void setup() 
+{
   Serial.begin(115200);
   delay(3000);
  
@@ -20,8 +24,32 @@ void setup() {
   Serial.println("Server started");
   Serial.print("IP address: ");
   Serial.println(WiFi.softAPIP());
-  
+
+  xTaskCreatePinnedToCore(LoopCore0,    // Função da tarefa
+                         "LoopCore0",   // Nome da tarefa
+                          10000,        // Tamanho da pilha da tarefa
+                          NULL,         // Parâmetro da tarefa
+                          1,            // Prioridade da tarefa
+                          NULL,         // Handle da tarefa
+                          0);           // Núcleo onde a tarefa será executada
+                        
 }
+
+void LoopCore0(void *pvParameters)
+{
+  while(1)
+  {
+    if (Serial.available() > 0)
+    {
+      controlString = Serial.readStringUntil('\n');
+      Serial.println(controlString);
+    }
+    
+    vTaskDelay(250 / portTICK_PERIOD_MS);
+  }
+}
+
+
 
 void loop() 
 {
