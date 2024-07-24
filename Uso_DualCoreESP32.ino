@@ -1,6 +1,10 @@
 #include "WiFi.h"
+#include "Drone.h"
+#include <stdlib.h>  // Inclui a biblioteca padrão para atof
+
 
 WiFiClient client;
+Drone d;
 
 void LoopCore0(void *pvParameters);
 
@@ -13,7 +17,7 @@ const char *host = "192.168.4.1"; // IP do servidor ESP32
 const uint16_t port = 80;
 
 void setup() {
-  Serial.begin(115200);
+  d.MainControlSetup(115200,32,33,25,26,5,18,19,21); 
   while (!Serial){}
 
   WiFi.begin(ssid, password);
@@ -65,6 +69,8 @@ void setup() {
 
 void loop() 
 {
+  d.MPUgetSignalsLoop();
+  d.MainControlLoop();
 //  delay(5000);
 //  if (!client.connect(host, port)) {
 //    Serial.println("Connection to server failed");
@@ -94,4 +100,3 @@ void LoopCore0(void *pvParameters)
     vTaskDelay(6000 / portTICK_PERIOD_MS); // Ag
   }
 }
-
