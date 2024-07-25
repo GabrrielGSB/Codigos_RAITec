@@ -58,12 +58,13 @@ void prepararComando(WiFiClient client)
     cmd = Serial.readString();
     
     adress = (cmd[0] - '0') -1;
-    mod = atof(&(cmd[2]));
+    mod    = atof(&(cmd[2]));
 
     Serial.printf("\nO comando chamado é: %s\n",cmd);
 
     PID[adress] += mod;
-    if (cmd == "r\n") copiarLista(PIDcopy, PID, 9);
+  
+    if (adress == 65) copiarLista(PIDcopy, PID, 9);
     for (int i = 0 ; i < pidSize ; i++)
     {
       Serial.printf("%0.2f \n", PID[i]);
@@ -73,5 +74,6 @@ void prepararComando(WiFiClient client)
 
 void copiarLista(float* fonte, float* copia, int tamanhoLista) 
 {
+  Serial.println("Resetando os Parâmetros do PID");
   for (int i = 0; i < tamanhoLista; i++) copia[i] = fonte[i];
 }
