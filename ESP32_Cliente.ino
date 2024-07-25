@@ -1,4 +1,11 @@
 #include <WiFi.h>
+#include "Drone.h"
+
+
+WiFiClient client;
+Drone d;
+
+void LoopCore0(void *pvParameters);
 
 float PID[9]     = {2,0,0, 0.6,3.5,0.03, 1,6,0},
       PIDcopy[9] = {2,0,0, 0.6,3.5,0.03, 1,6,0},
@@ -18,56 +25,80 @@ const uint16_t port = 80;
 
 String cmd;
 
-WiFiClient client;
 
-void setup() {
+
+void setup() 
+{
+  d.MainControlSetup(115200,32,33,25,26,5,18,19,21); 
   Serial.begin(115200);
   while(!Serial){}
   // Conecta-se à rede WiFi do servidor
   WiFi.begin(ssid, password);
-  Serial.print("Connecting to WiFi");
+  Serial.print("Conectando ao WiFi");
 
-  while (WiFi.status() != WL_CONNECTED) {
+  while (WiFi.status() != WL_CONNECTED) 
+  {
     delay(500);
     Serial.print(".");
   }
-  Serial.println(" Connected");
+  Serial.println("Conectado!!!");
+
+  xTaskCreatePinnedToCore(LoopCore0,  // Função da tarefa
+                         "LoopCore0", // Nome da tarefa
+                          10000,      // Tamanho da pilha da tarefa
+                          NULL,       // Parâmetro da tarefa
+                          1,          // Prioridade da tarefa
+                          NULL,       // Handle da tarefa
+                          0);         // Núcleo onde a tarefa será executada
 }
 
-void loop() 
+void LoopCore0(void *pvParameters) 
 {
-  delay(500);
-  cmd = "";
-  // Serial.println();
-  if (!client.connect(host, port)) 
+  while(1)
   {
-    Serial.println("Connection to server failed");
-    return;
-  }
-
-  while (client.connected()) 
-  {
-    if (client.available()) 
+    vTaskDelay(500 / portTICK_PERIOD_MS);
+    cmd = "";
+    // Serial.println();
+    if (!client.connect(host, port)) 
     {
-      cmd = client.readStringUntil('\n');
-      Serial.println("Mensagem do Servidor: " + cmd);
-      break;
+      Serial.println("Connection to server failed");
+      return;
     }
+  
+    while (client.connected()) 
+    {
+      if (client.available()) 
+      {
+        cmd = client.readStringUntil('\n');
+        Serial.println("Mensagem do Servidor: " + cmd);
+        break;
+      }
+    }
+  
+    client.stop();
+    processarComando(cmd);
   }
+}
 
-  client.stop();
+void loop()
+{
+  d.MPUgetSignalsLoop();
+  d.MainControlLoop();
+}
 
-  adress = (cmd[0] - '0') -1;
+void processarComando(String comando)
+{
+  adress = (cmd[0] - '0')-1;
   mod = atof(&(cmd[2]));
 
   PID[adress] += mod;
-  if (cmd == "r") copiarLista(PIDcopy, PID, 9);
-  for (int i = 0 ; i < pidSize ; i++) Serial.printf("%0.2f \n", PID[i]);
+  if (adress == 65) copiarLista(PIDcopy, PID, 9);
+  d.updatePID(adress, mod);
+
+  for (int i = 0 ; i < pidSize ; i++) Serial.printf("%0.2f \n", PID[i]);    
 }
 
 void copiarLista(float* fonte, float* copia, int tamanhoLista) 
 {
   for (int i = 0; i < tamanhoLista; i++) copia[i] = fonte[i];
 }
-
-
