@@ -1,3 +1,4 @@
+
 #include <WiFi.h>
 #include "Drone.h"
 
@@ -5,7 +6,10 @@
 WiFiClient client;
 Drone d;
 
-void LoopCore0(void *pvParameters);
+unsigned long previousMillis = 0;  // armazenará o último valor de millis()
+const long interval = 2000;  
+//
+//void LoopCore0(void *pvParameters);
 
 float PID[9]     = {2,0,0, 0.6,3.5,0.03, 1,6,0},
       PIDcopy[9] = {2,0,0, 0.6,3.5,0.03, 1,6,0},
@@ -29,11 +33,13 @@ String cmd;
 
 void setup() 
 {
-  d.MainControlSetup(115200,32,33,25,26,5,18,19,21); 
-  Serial.begin(115200);
+  d.MainControlSetup(115200,32,33,25,26,19,18,5,17); 
+//  Serial.begin(115200);
+ 
   while(!Serial){}
   // Conecta-se à rede WiFi do servidor
   WiFi.begin(ssid, password);
+  
   Serial.print("Conectando ao WiFi");
 
   while (WiFi.status() != WL_CONNECTED) 
@@ -43,47 +49,75 @@ void setup()
   }
   Serial.println("Conectado!!!");
 
-  xTaskCreatePinnedToCore(LoopCore0,  // Função da tarefa
-                         "LoopCore0", // Nome da tarefa
-                          10000,      // Tamanho da pilha da tarefa
-                          NULL,       // Parâmetro da tarefa
-                          1,          // Prioridade da tarefa
-                          NULL,       // Handle da tarefa
-                          0);         // Núcleo onde a tarefa será executada
+//  xTaskCreatePinnedToCore(LoopCore0,  // Função da tarefa
+//                         "LoopCore0", // Nome da tarefa
+//                          10000,      // Tamanho da pilha da tarefa
+//                          NULL,       // Parâmetro da tarefa
+//                          1,          // Prioridade da tarefa
+//                          NULL,       // Handle da tarefa
+//                          0);         // Núcleo onde a tarefa será executada
 }
 
-void LoopCore0(void *pvParameters) 
-{
-  while(1)
-  {
-    vTaskDelay(500 / portTICK_PERIOD_MS);
-    cmd = "";
-    // Serial.println();
-    if (!client.connect(host, port)) 
-    {
-      Serial.println("Connection to server failed");
-      return;
-    }
-  
-    while (client.connected()) 
-    {
-      if (client.available()) 
-      {
-        cmd = client.readStringUntil('\n');
-        Serial.println("Mensagem do Servidor: " + cmd);
-        break;
-      }
-    }
-  
-    client.stop();
-    processarComando(cmd);
-  }
-}
+//void LoopCore0(void *pvParameters) 
+//{
+//  while(1)
+//  {
+//    vTaskDelay(500 / portTICK_PERIOD_MS);
+//    cmd = "";
+//    // Serial.println();
+//    if (!client.connect(host, port)) 
+//    {
+//      Serial.println("Connection to server failed");
+//      return;
+//    }
+//  
+//    while (client.connected()) 
+//    {
+//      if (client.available()) 
+//      {
+//        cmd = client.readStringUntil('\n');
+//        Serial.println("Mensagem do Servidor: " + cmd);
+//        break;
+//      }
+//    }
+//  
+//    client.stop();
+//    processarComando(cmd);
+//  }
+//}
 
 void loop()
 {
+  unsigned long currentMillis = millis();
+  cmd = "";
   d.MPUgetSignalsLoop();
   d.MainControlLoop();
+//  d.DisplaySerialMpuData();
+
+  if (currentMillis - previousMillis >= interval) 
+  {
+    previousMillis = currentMillis;
+    if (!client.connect(host, port)) 
+      {
+        Serial.println("Connection to server failed");
+        return;
+      }
+    
+      while (client.connected()) 
+      {
+        if (client.available()) 
+        {
+          cmd = client.readStringUntil('\n');
+          Serial.println("Mensagem do Servidor: " + cmd);
+          break;
+        }
+      }
+  
+  
+    client.stop();
+    processarComando(cmd);
+   }
+
 }
 
 void processarComando(String comando)
