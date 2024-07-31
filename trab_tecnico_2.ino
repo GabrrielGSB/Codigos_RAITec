@@ -58,7 +58,8 @@ void setup()
   tft.fillScreen(WHITE);
   //---------------------------------
   // FumacaDetectada();
-  Intro();
+  //Intro();
+  Lampadas(1);
 }
 
 void loop(){}
@@ -398,65 +399,72 @@ void FumacaDetectada()
 
 void Lampadas(uint16_t estado) {
   tft.fillScreen(BLACK);
-  //Grossura de cada Pixel
+  // Grossura de cada Pixel
   int wallThickness = 10;
 
-  //Deneho da borda
+  // Desenho da borda
   tft.fillRect(0, 0, 240, wallThickness, WHITE);    // Superior
   tft.fillRect(0, 0, wallThickness, 320, WHITE);    // Esquerdo
   tft.fillRect(230, 0, wallThickness, 320, WHITE);  // Direito
   tft.fillRect(0, 310, 240, wallThickness, WHITE);  // Baixo
 
+  tft.fillRect(170, 10, wallThickness, 10, WHITE);  // Vertical
+  tft.fillRect(130, 10, wallThickness, 10, WHITE);  // Vertical
 
-  tft.fillRect(170, 10, wallThickness, 10, WHITE);  //Vertical
-  tft.fillRect(130, 10, wallThickness, 10, WHITE);  //Vertical
+  tft.fillRect(170, 50, wallThickness, 40, WHITE);   // Vertical
+  tft.fillRect(180, 80, 50, wallThickness, WHITE);   // Horizontal
+  tft.fillRect(170, 90, wallThickness, 70, WHITE);   // Vertical
+  tft.fillRect(210, 150, 20, wallThickness, WHITE);  // Horizontal
 
+  tft.fillRect(130, 160, 50, wallThickness, WHITE);  // Horizontal
+  tft.fillRect(130, 160, wallThickness, 100, WHITE);  // Vertical
+  tft.fillRect(130, 290, wallThickness, 30, WHITE);  // Vertical
 
-  tft.fillRect(170, 50, wallThickness, 40, WHITE);   //Vertical
-  tft.fillRect(180, 80, 50, wallThickness, WHITE);   //Horizontal
-  tft.fillRect(170, 90, wallThickness, 70, WHITE);   //Vertical
-  tft.fillRect(210, 150, 20, wallThickness, WHITE);  //Horizontal
+  tft.fillRect(10, 120, 130, wallThickness, WHITE);  // Horizontal
+  tft.fillRect(130, 50, wallThickness, 70, WHITE);   // Vertical
 
-  tft.fillRect(130, 160, 50, wallThickness, WHITE);  //Horizontal
-  tft.fillRect(130, 160, wallThickness, 100, WHITE);  //Vertical
-  tft.fillRect(130, 290, wallThickness, 30, WHITE);  //Vertical
-
-
-  tft.fillRect(10, 120, 130, wallThickness, WHITE);  //Horizontal
-  tft.fillRect(130, 50, wallThickness, 70, WHITE);   //Vertical
-
-  //Lâmpadas
-
-  tft.fillCircle(70, 70, 10, RED);//Quarto
-  
-  tft.fillCircle(70, 220, 10, YELLOW);// SALA
-
-  tft.fillCircle(205, 50, 10, BLUE);    //Quarto de serviço
-  
+  // Lâmpadas
+  tft.fillCircle(70, 70, 10, RED);    // Quarto
+  tft.fillCircle(70, 220, 10, GRAY);  // SALA
+  tft.fillCircle(205, 50, 10, BLUE);    // Quarto de serviço
   tft.fillCircle(205, 120, 10, GREEN);
-  
   tft.fillCircle(185, 220, 10, CYAN);   // Cozinha
-  
 
- switch (estado)
+  // Indicação de lâmpada ligada
+  auto drawRays = [](int x, int y) {
+    tft.drawLine(x, y - 15, x, y - 20,YELLOW);
+    tft.drawLine(x, y + 15, x, y + 20, YELLOW);
+    tft.drawLine(x - 15, y, x - 20, y, YELLOW);
+    tft.drawLine(x + 15, y, x + 20, y, YELLOW);
+    tft.drawLine(x - 10, y - 10, x - 15, y - 15, YELLOW);
+    tft.drawLine(x + 10, y - 10, x + 15, y - 15, YELLOW);
+    tft.drawLine(x - 10, y + 10, x - 15, y + 15, YELLOW);
+    tft.drawLine(x + 10, y + 10, x + 15, y + 15, YELLOW);
+  };
+
+  switch (estado)
   {
     case 3:
-      tft.drawCircle(70, 70, 15, WHITE);
+      tft.drawCircle(70, 70, 15, YELLOW);
+      drawRays(70, 70);  // Desenha raios de luz
       break;
     case 2:
-      tft.drawCircle(70, 220, 15, WHITE);
+      tft.drawCircle(70, 220, 15, YELLOW);
+      drawRays(70, 220);  // Desenha raios de luz
       break;
     case 4:
-      tft.drawCircle(205, 50, 15, WHITE);
+      tft.drawCircle(205, 50, 15, YELLOW);
+      drawRays(205, 50);  // Desenha raios de luz
       break;
-    case 5: 
-      tft.drawCircle(205, 120, 15, WHITE);
+    case 5:
+      tft.drawCircle(205, 120, 15, YELLOW);
+      drawRays(205, 120);  // Desenha raios de luz
       break;
-    case 1: 
-      tft.drawCircle(185, 220, 15, WHITE);
+    case 1:
+      tft.drawCircle(185, 220, 15, YELLOW);
+      drawRays(185, 220);  // Desenha raios de luz
       break;
   }
-  
 }
 
 void exibirLCD(float correnteRMS) 
