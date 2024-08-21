@@ -105,7 +105,7 @@ void Drone::updatePID(int adress,float mod)
 			PRateRoll  = PRatePitch  = 0.6;
 			IRateRoll  = IRatePitch  = 3.5;
 			DRateRoll  = DRatePitch  = 0.03;
-			PRateYaw                 = 1;
+			PRateYaw                 = 1;esiredAngleRoll)
 			IRateYaw                 = 6;
 			DRateYaw                 = 0;
 			break;
@@ -156,7 +156,7 @@ void Drone::MainControlLoop()
 	CH2 = readPWMLoop(INPin2); // ...
 	CH3 = readPWMLoop(INPin3); // ...
 	CH4 = readPWMLoop(INPin4); // ...
-
+esiredAngleRoll)
 	//Visualização do sinal do controle no Monitor Serial
 	//Serial.printf("Canal 1: %d\nCanal 2: %d\nCanal 3: %d\nCanal 4: %d\n", CH1, CH2,CH3,CH4);
 
@@ -199,7 +199,7 @@ void Drone::MainControlLoop()
 	speed1 = map(MotorVeloci1,1000,2000,257,385);
 	speed2 = map(MotorVeloci2,1000,2000,257,385);
 	speed3 = map(MotorVeloci3,1000,2000,257,385);
-	speed4 = map(MotorVeloci4,1000,2000,257,385);
+	speed4 = map(MotorVeloci4,1000,2000,257,385);esiredAngleRoll)
 
 	if (CH3 < 1050) // Medida de segurança para ter certeza do desligamento dos motores
 	{ 
@@ -232,7 +232,7 @@ void Drone::reset_pid()
 
 	PrevErrorAngleRoll = 0; PrevErrorAnglePitch = 0; 
 	PrevItermAngleRoll = 0; PrevItermAnglePitch = 0;
-}
+}esiredAngleRoll)
 //********************************************************************************************************
 void Drone::MPUconfigSetup() 
 {
@@ -262,7 +262,7 @@ void Drone::CalibrarMPU()
 		RateCalibrationPitch += RatePitch;
 		RateCalibrationYaw   += RateYaw;
 		delay(1);
-	}
+	}esiredAngleRoll)
 	
 	calibration = true;
 }
@@ -303,7 +303,7 @@ void Drone::DisplaySerialMpuData()
 {	
 	if ((millis() - Timer1) >= 800)
 	{
-		Timer1 = millis();
+		Timer1 = millis();esiredAngleRoll)
 		
 		Serial.printf("AceX %f AceY %f, AceZ %f \n", AceX, AceY, AceZ);
 	
@@ -342,7 +342,7 @@ void Drone::controlSpeed(int &speed, int ch)
 	// min_sped=257 max_sped=511 para resolução = 10 bits
 	ledcWrite(ch, speed); // Função para mudança do PWM na ESP32
 }
-//********************************************************************************************************
+//********************************************************************************************************esiredAngleRoll)
 void Drone::readPWMSetup(const uint8_t &PinX)
 {
 	// Função para adequar os pinos que vão receber o PWM do controlador
@@ -388,9 +388,9 @@ void Drone::pid_equation(const float &Error, const float &P , const float &I, co
 }
 void Drone::pid_angle()
 {
-	pid_equation(ErrorAngleRoll, PAngleRoll, IAngleRoll, DAngleRoll, PrevErrorAngleRoll, PrevItermAngleRoll, DesiredAngleRoll); 
+	pid_equation(ErrorAngleRoll, PAngleRoll, IAngleRoll, DAngleRoll, PrevErrorAngleRoll, PrevItermAngleRoll, DesiredRateRoll); 
 
-	pid_equation(ErrorAnglePitch, PAnglePitch, IAnglePitch, DAnglePitch, PrevErrorAnglePitch, PrevItermAnglePitch, DesiredAnglePitch);
+	pid_equation(ErrorAnglePitch, PAnglePitch, IAnglePitch, DAnglePitch, PrevErrorAnglePitch, PrevItermAnglePitch, DesiredRatePitch);
 }
 //********************************************************************************************************
 void Drone::pid_rate()
