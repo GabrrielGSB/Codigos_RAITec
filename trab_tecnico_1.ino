@@ -21,16 +21,16 @@ byte estadoPorta  = 0x06;
 byte alertaFumaca = 0x00;
 
 bool acaoRealizada  = false;
-bool oneBtt       = 0,
-     oneUp        = 0, 
-     oneDown      = 0, 
-     oneLeft      = 0, 
-     oneRight     = 0,
-     onePastBtt   = 0,
-     onePastUp    = 0,
-     onePastDown  = 0, 
-     onePastLeft  = 0, 
-     onePastRight = 0;
+bool oneBtt         = 0,
+     oneUp          = 0, 
+     oneDown        = 0, 
+     oneLeft        = 0, 
+     oneRight       = 0,
+     onePastBtt     = 0,
+     onePastUp      = 0,
+     onePastDown    = 0, 
+     onePastLeft    = 0, 
+     onePastRight   = 0;
 
 void setup()
 {
@@ -40,6 +40,7 @@ void setup()
   pinMode(controlY,   INPUT);
   pinMode(controlBtt, INPUT);
 }
+
 void loop()
 {
   tempoAtual = millis();
@@ -311,31 +312,14 @@ void controleDisplay()
           case 0x04:
             Serial.println("Porta Fechada");
             telaAtual = 0x06;
-//            criarByteCtrl();
-//            enviarControle();
-//            telaAtual = 0x03;
             break;
           case 0x05:
             Serial.println("Porta Aberta");
             telaAtual = 0x07;
-//            criarByteCtrl();
-//            enviarControle();
-//            delay(5000);
-//            Serial.println("Porta Fechada");
-//            telaAtual = 0x06;
-//            criarByteCtrl();
-//            enviarControle();
             break;
           case 0x06:
             Serial.println("Porta Trancada");
             telaAtual = 0x08;
-//            criarByteCtrl();
-//            enviarControle();
-//            delay(5000);
-//            Serial.println("Porta Fechada");
-//            telaAtual = 0x06;
-//            criarByteCtrl();
-//            enviarControle();
             break;
         }
         }
@@ -367,6 +351,9 @@ void controleDisplay()
                 case 0x02:
                   estadoAtual = 0x01;
                   break;
+                case 0x04:
+                  estadoAtual = 0x01;
+                  break;
               }
             }
             break;
@@ -377,32 +364,38 @@ void controleDisplay()
               switch (acaoAtual)
               {
                 case 0x02:
-                  estadoAtual = 0x04;
-                  break;
-                case 0x03:
-                  estadoAtual = 0x02;
-                  break;
-              }
-            }
-            break;
-          case 0x04: // Estado atual
-            Serial.println("LAMPADA 3");
-            if (acaoRealizada == true)
-            {
-              switch (acaoAtual)
-              {
-                case 0x02:
                   estadoAtual = 0x00;
                   break;
                 case 0x03:
                   estadoAtual = 0x02;
                   break;
+                case 0x01:
+                  estadoAtual = 0x02;
+                  break;
                 case 0x04:
-                  estadoAtual = 0x03;
+                  estadoAtual = 0x00;
                   break;
               }
             }
             break;
+//          case 0x04: // Estado atual
+//            Serial.println("LAMPADA 3");
+//            if (acaoRealizada == true)
+//            {
+//              switch (acaoAtual)
+//              {
+//                case 0x02:
+//                  estadoAtual = 0x00;
+//                  break;
+//                case 0x03:
+//                  estadoAtual = 0x02;
+//                  break;
+//                case 0x04:
+//                  estadoAtual = 0x03;
+//                  break;
+//              }
+//            }
+//            break;
           case 0x00: // Estado atual
             Serial.println("LAMPADA 4");
             if (acaoRealizada == true)
@@ -413,8 +406,13 @@ void controleDisplay()
                   estadoAtual = 0x01;
                   break;
                 case 0x04:
-                  estadoAtual = 0x04;
+                  estadoAtual = 0x03;
                   break;
+                case 0x01:
+                  estadoAtual = 0x01;
+                  break;
+                case 0x02:
+                  estadoAtual = 0x03;
               }
             }
             break;
@@ -434,6 +432,8 @@ void controleDisplay()
                 case 0x04:
                   estadoAtual = 0x02;
                   break;
+                case 0x02:
+                  estadoAtual = 0x02;
               }
             }
             break;
