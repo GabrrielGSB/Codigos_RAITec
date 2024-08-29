@@ -58,18 +58,18 @@ void setup()
   tft.fillScreen(WHITE);
   //---------------------------------
   // FumacaDetectada();
-  //Intro();
-  Lampadas(1);
+  Intro();
+//  Lampadas(1);
 }
 
 void loop(){}
 
 void controleDisplay()
 {
-  telaAtual = (byteCtrl >> 8) & 0x000F;
-  estadoAtual = ((byteCtrl >> 4) & 0x000F) + 1;
-  alertaFumaca = (byteCtrl >> 12) & 0x0001;
-  estadoPorta = (byteCtrl >> 13) & 0x0003;
+  telaAtual    = ( byteCtrl >> 8)  & 0x000F;
+  estadoAtual  = ((byteCtrl >> 4)  & 0x000F) + 1;
+  alertaFumaca = ( byteCtrl >> 12) & 0x0001;
+  estadoPorta  = ( byteCtrl >> 13) & 0x0003;
   Serial.println(telaAtual);
 
   if(alertaFumaca == 1)
@@ -127,11 +127,11 @@ void Intro()
   int centerY1 = tft.height() / 1.5;
 
   // Largura e altura das letras "L" ajustadas
-  int widthL = 40;   // Largura de cada "L"
-  int heightL = 60;  // Altura de cada "L"
-  int spacing = 1;
-  int spacing1 = 1;    // Espaçamento vertical entre as letras "L"
-  int thickness = 14;  // Espessura das linhas
+  int widthL     = 40;   // Largura de cada "L"
+  int heightL    = 60;  // Altura de cada "L"
+  int spacing    = 1;
+  int spacing1   = 1;    // Espaçamento vertical entre as letras "L"
+  int thickness  = 14;  // Espessura das linhas
   int thickness1 = 14;
   // Desenha o primeiro "L" (normal)
   tft.fillRoundRect(centerX - widthL / 5, centerY - heightL - spacing / 2, thickness, heightL, 5, CYAN);   // Linha horizontal
@@ -152,7 +152,7 @@ void Intro2()
   for (int i = 0; i < numStars; i++) {
     starX[i] = random(tft.width());
     starY[i] = random(tft.height());
-  }
+ }
 
   tft.fillScreen(BLACK);
 
@@ -403,25 +403,25 @@ void Lampadas(uint16_t estado) {
   int wallThickness = 10;
 
   // Desenho da borda
-  tft.fillRect(0, 0, 240, wallThickness, WHITE);    // Superior
-  tft.fillRect(0, 0, wallThickness, 320, WHITE);    // Esquerdo
-  tft.fillRect(230, 0, wallThickness, 320, WHITE);  // Direito
-  tft.fillRect(0, 310, 240, wallThickness, WHITE);  // Baixo
+  tft.fillRect(0,   0, 240, wallThickness,      WHITE);    // Superior
+  tft.fillRect(0,   0,      wallThickness, 320, WHITE);    // Esquerdo
+  tft.fillRect(230, 0,      wallThickness, 320, WHITE);  // Direito
+  tft.fillRect(0, 310, 240, wallThickness,      WHITE);  // Baixo
 
-  tft.fillRect(170, 10, wallThickness, 10, WHITE);  // Vertical
-  tft.fillRect(130, 10, wallThickness, 10, WHITE);  // Vertical
+  tft.fillRect(170, 10,  wallThickness, 10, WHITE);  // Vertical
+  tft.fillRect(130, 10,  wallThickness, 10, WHITE);  // Vertical
 
-  tft.fillRect(170, 50, wallThickness, 40, WHITE);   // Vertical
-  tft.fillRect(180, 80, 50, wallThickness, WHITE);   // Horizontal
-  tft.fillRect(170, 90, wallThickness, 70, WHITE);   // Vertical
+  tft.fillRect(170, 50,  wallThickness, 40, WHITE);   // Vertical
+  tft.fillRect(180, 80,  50, wallThickness, WHITE);   // Horizontal
+  tft.fillRect(170, 90,  wallThickness, 70, WHITE);   // Vertical
   tft.fillRect(210, 150, 20, wallThickness, WHITE);  // Horizontal
 
-  tft.fillRect(130, 160, 50, wallThickness, WHITE);  // Horizontal
-  tft.fillRect(130, 160, wallThickness, 100, WHITE);  // Vertical
-  tft.fillRect(130, 290, wallThickness, 30, WHITE);  // Vertical
+  tft.fillRect(130, 160, 50, wallThickness,      WHITE);  // Horizontal
+  tft.fillRect(130, 160,     wallThickness, 100, WHITE);  // Vertical
+  tft.fillRect(130, 290,     wallThickness, 30,  WHITE);  // Vertical
 
-  tft.fillRect(10, 120, 130, wallThickness, WHITE);  // Horizontal
-  tft.fillRect(130, 50, wallThickness, 70, WHITE);   // Vertical
+  tft.fillRect(10,  120, 130, wallThickness, WHITE);  // Horizontal
+  tft.fillRect(130, 50,  wallThickness, 70,  WHITE);   // Vertical
 
   // Lâmpadas
   tft.fillCircle(70, 70, 10, RED);    // Quarto
@@ -453,6 +453,7 @@ void Lampadas(uint16_t estado) {
       drawRays(70, 220);  // Desenha raios de luz
       break;
     case 4:
+//      Serial.println(lamb4);
       tft.drawCircle(205, 50, 15, YELLOW);
       drawRays(205, 50);  // Desenha raios de luz
       break;
