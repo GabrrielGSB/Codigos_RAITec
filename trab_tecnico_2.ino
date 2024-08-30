@@ -10,42 +10,47 @@
 
 Adafruit_TFTLCD tft(LCD_CS, LCD_CD, LCD_WR, LCD_RD, LCD_RESET);
 
-//DEFINIÇÃO DAS CORES UTIbLIZADAS
-#define WHITE 0xFFFF
+//DEFINIÇÃO DAS CORES UTILIZADAS
+#define WHITE  0xFFFF
 #define YELLOW 0xFFE0
-#define RED 0xF800
-#define BLUE 0x001F
-#define BLACK 0x0000
-#define CYAN 0x07FF
+#define RED    0xF800
+#define BLUE   0x001F
+#define BLACK  0x0000
+#define CYAN   0x07FF
 #define PURPLE 0xDA70D6
-#define GRAY 0xD3D3D3
-#define GREEN 0x07E0
+#define GRAY   0xD3D3D3
+#define GREEN  0x07E0
 //-------------------------------
 
-#define CORRENTE_BAR_X 5
-#define CORRENTE_BAR_Y 70
-#define CORRENTE_BAR_WIDTH 200
+#define CORRENTE_BAR_X      5
+#define CORRENTE_BAR_Y      70
+#define CORRENTE_BAR_WIDTH  200
 #define CORRENTE_BAR_HEIGHT 20
 
-#define POTENCIA_BAR_X 5
-#define POTENCIA_BAR_Y 170
-#define POTENCIA_BAR_WIDTH 200
+#define POTENCIA_BAR_X      5
+#define POTENCIA_BAR_Y      170
+#define POTENCIA_BAR_WIDTH  200
 #define POTENCIA_BAR_HEIGHT 20
 
 float correnteRMS = 20.0;
-uint16_t byteCtrl = 0x0000;
-uint16_t lowByte, highByte;
-uint16_t telaAtual = 0x0000;
 
-byte acaoAtual     = 0x0000;
+uint32_t byteCtrl  = 0;
+uint16_t telaAtual = 0;
 
-byte estadoAtual  = 0x0000;
-byte estadoPorta  = 0x0400;
-byte alertaFumaca = 0x0000;
+uint32_t lowByte  = 0,
+         highByte = 0, 
+         lampByte = 0,
+         dummy    = 0;
+
+byte acaoAtual     = 0x00;
+byte estadoAtual   = 0x00;
+byte estadoPorta   = 0x04;
+byte alertaFumaca  = 0x00;
+byte estadoLampada = 0x00;
 
 unsigned long tempoAntigo = 0;
 unsigned long tempoAtual;
-uint16_t  intervalo = 1000;
+uint16_t intervalo = 1000;
 
 void setup() 
 {
@@ -57,25 +62,21 @@ void setup()
   tft.setRotation(0);
   tft.fillScreen(WHITE);
   //---------------------------------
-  // FumacaDetectada();
   Intro();
-//  Lampadas(1);
 }
 
 void loop(){}
 
 void controleDisplay()
 {
-  telaAtual    = ( byteCtrl >> 8)  & 0x000F;
-  estadoAtual  = ((byteCtrl >> 4)  & 0x000F) + 1;
-  alertaFumaca = ( byteCtrl >> 12) & 0x0001;
-  estadoPorta  = ( byteCtrl >> 13) & 0x0003;
-  Serial.println(telaAtual);
+  telaAtual     = ( byteCtrl >> 8)  & 0xF;
+  estadoAtual   = ((byteCtrl >> 4)  & 0xF) + 1;
+  alertaFumaca  = ( byteCtrl >> 12) & 0x1;
+  estadoPorta   = ( byteCtrl >> 13) & 0x3;
+  estadoLampada = ( byteCtrl >> 16) & 0xF; 
+  Serial.println(alertaFumaca);
 
-  if(alertaFumaca == 1)
-  {
-    FumacaDetectada();
-  }
+  if(alertaFumaca == 1) FumacaDetectada();
   else
   {
     if (telaAtual == 0) Intro(); 
@@ -88,21 +89,21 @@ void controleDisplay()
     if (telaAtual == 7) PortaAberta();
     if (telaAtual == 8) PortaTrancada();
   }
-
-  
 }
 
 void receiveEvent(int howMany)
 {
   lowByte  = Wire.read();
   highByte = Wire.read(); 
+  lampByte = Wire.read();
+  dummy    = Wire.read();
  
-  byteCtrl = (highByte << 8) | lowByte;
+  byteCtrl = (lampByte << 16) | (highByte << 8) | lowByte;
+
   Serial.print("byte recebido: ");
-  Serial.println(byteCtrl, BIN);
+  Serial.println(byteCtrl, HEX);
   tft.begin(0x9341);
   controleDisplay();
-  
 }
 
 void Intro() 
@@ -411,10 +412,10 @@ void Lampadas(uint16_t estado) {
   tft.fillRect(170, 10,  wallThickness, 10, WHITE);  // Vertical
   tft.fillRect(130, 10,  wallThickness, 10, WHITE);  // Vertical
 
-  tft.fillRect(170, 50,  wallThickness, 40, WHITE);   // Vertical
-  tft.fillRect(180, 80,  50, wallThickness, WHITE);   // Horizontal
-  tft.fillRect(170, 90,  wallThickness, 70, WHITE);   // Vertical
-  tft.fillRect(210, 150, 20, wallThickness, WHITE);  // Horizontal
+  tft.fillRect(170, 50,      wallThickness, 40, WHITE);   // Vertical
+  tft.fillRect(180, 80,  50, wallThickness,     WHITE);   // Horizontal
+  tft.fillRect(170, 90,      wallThickness, 70, WHITE);   // Vertical
+  tft.fillRect(210, 150, 20, wallThickness,     WHITE);  // Horizontal
 
   tft.fillRect(130, 160, 50, wallThickness,      WHITE);  // Horizontal
   tft.fillRect(130, 160,     wallThickness, 100, WHITE);  // Vertical
@@ -427,7 +428,6 @@ void Lampadas(uint16_t estado) {
   tft.fillCircle(70, 70, 10, RED);    // Quarto
   tft.fillCircle(70, 220, 10, GRAY);  // SALA
   tft.fillCircle(205, 50, 10, BLUE);    // Quarto de serviço
-  tft.fillCircle(205, 120, 10, GREEN);
   tft.fillCircle(185, 220, 10, CYAN);   // Cozinha
 
   // Indicação de lâmpada ligada
@@ -446,24 +446,19 @@ void Lampadas(uint16_t estado) {
   {
     case 3:
       tft.drawCircle(70, 70, 15, YELLOW);
-      drawRays(70, 70);  // Desenha raios de luz
+      if (estadoLampada == 0x1) drawRays(70, 70);  // Desenha raios de luz
       break;
     case 2:
       tft.drawCircle(70, 220, 15, YELLOW);
-      drawRays(70, 220);  // Desenha raios de luz
+      if (estadoLampada == 0x8) drawRays(70, 220);  // Desenha raios de luz
       break;
     case 4:
-//      Serial.println(lamb4);
       tft.drawCircle(205, 50, 15, YELLOW);
-      drawRays(205, 50);  // Desenha raios de luz
-      break;
-    case 5:
-      tft.drawCircle(205, 120, 15, YELLOW);
-      drawRays(205, 120);  // Desenha raios de luz
+      if (estadoLampada == 0x2) drawRays(205, 50);  // Desenha raios de luz
       break;
     case 1:
       tft.drawCircle(185, 220, 15, YELLOW);
-      drawRays(185, 220);  // Desenha raios de luz
+      if (estadoLampada == 0x4) drawRays(185, 220);  // Desenha raios de luz
       break;
   }
 }
