@@ -1,23 +1,34 @@
 #include "Wire.h"
 #define controlX       A0
 #define controlY       A1
+#define fumaca         A2
 #define controlBtt     3
+#define lamp1          4
+#define lamp2          5
+#define lamp3          6
+#define lamp4          7
+#define ESPcomand      8
 
 
 unsigned long tempoAntigo = 0;
 unsigned long tempoAtual;
-uint16_t  intervalo = 100;
 
+uint16_t  intervalo = 100,
+          danger;
 
-uint16_t byteCtrl    = 0x0000;
-uint16_t byteCtrlOld = 0x0000;
-uint16_t byteCtrlH   = 0x0000;
+uint32_t byteCtrl    = 0;
+uint32_t byteCtrlOld = 0;
+uint32_t byteCtrlH   = 0;
+uint32_t CtrlLamp    = 0;
+
+int corrente = 0;
 
 byte byteCtrlL    = 0x00;
 byte acaoAtual    = 0x00;
 byte telaAtual    = 0x00;
+byte telaOld      = 0x00;
 byte estadoAtual  = 0x00;
-byte estadoPorta  = 0x06;
+byte estadoPorta  = 0x04;
 byte alertaFumaca = 0x00;
 
 bool acaoRealizada  = false;
@@ -31,6 +42,11 @@ bool oneBtt         = 0,
      onePastDown    = 0, 
      onePastLeft    = 0, 
      onePastRight   = 0;
+bool lampOn1 = 0,
+     lampOn2 = 0,
+     lampOn3 = 0,
+     lampOn4 = 0;
+bool ESPcom;
 
 void setup()
 {
@@ -39,42 +55,85 @@ void setup()
   pinMode(controlX,   INPUT);
   pinMode(controlY,   INPUT);
   pinMode(controlBtt, INPUT);
+  pinMode(lamp1, OUTPUT);
+  pinMode(lamp2, OUTPUT);
+  pinMode(lamp3, OUTPUT);
+  pinMode(lamp4, OUTPUT);
+  pinMode(fumaca, INPUT);
+  pinMode(ESPcomand, INPUT);
+  pinMode(Isensor, INPUT);
+
 }
 
 void loop()
 {
   tempoAtual = millis();
-  if (tempoAtual - tempoAntigo >= intervalo)
+  if (tempoAtual - tempoAntigo >= intervalo) // Taxa de atualização do loop de controle
   {
     tempoAntigo = tempoAtual;
     acaoRealizada = false;
-
+    
     byteCtrlOld = byteCtrl;
+    detectarFumaca();
+    detectarPorta();
+    estadoLampadas();
     obterAcaoCotrole();
     criarByteCtrl();
     controleDisplay();
-    if (byteCtrl != byteCtrlOld)
-    {
-      enviarControle();
-    }
-    
+    Serial.println(byteCtrl,HEX);
+    if (byteCtrl != byteCtrlOld) enviarControle();
   }
-  
+}
+
+void detectarPorta()
+{
+  ESPcom = digitalRead(ESPcomand);
+  if (ESPcom) estadoPorta = 0x05;
+  else        estadoPorta = 0x06;
+}
+
+void detectarFumaca()
+{
+  danger = analogRead(fumaca);
+  if (danger >= 550) alertaFumaca = 0x01;
+  else               alertaFumaca = 0x00;          
+}
+
+void estadoLampadas()
+{
+  if (lampOn1) CtrlLamp = (CtrlLamp | 0x1);
+  else         CtrlLamp = (CtrlLamp & 0xE);
+  if (lampOn2) CtrlLamp = (CtrlLamp | 0x2);
+  else         CtrlLamp = (CtrlLamp & 0xD);
+  if (lampOn3) CtrlLamp = (CtrlLamp | 0x4);
+  else         CtrlLamp = (CtrlLamp & 0xB);
+  if (lampOn4) CtrlLamp = (CtrlLamp | 0x8);
+  else         CtrlLamp = (CtrlLamp & 0x7);
+
+  if (lampOn1) digitalWrite(lamp1, HIGH);
+  else         digitalWrite(lamp1, LOW );
+  if (lampOn2) digitalWrite(lamp2, HIGH);
+  else         digitalWrite(lamp2, LOW );
+  if (lampOn3) digitalWrite(lamp3, HIGH);
+  else         digitalWrite(lamp3, LOW );
+  if (lampOn4) digitalWrite(lamp4, HIGH);
+  else         digitalWrite(lamp4, LOW );
 }
 
 void enviarControle()
 {
-  // delay(1000);
+  int cor = 4;
   Wire.begin();
   Wire.beginTransmission(8); 
   Wire.write((byte*)&byteCtrl, sizeof(byteCtrl));
-  // Wire.write((byte*)&byteCtrlL, sizeof(byteCtrlL));
   Wire.endTransmission();
   Wire.end();
-  // delay(500);
-  // Wire.beginTransmission(8);
-  
+
+  // Wire.begin();
+  // Wire.beginTransmission(8); 
+  // Wire.write((byte*)&cor, sizeof(cor));
   // Wire.endTransmission();
+  // Wire.end();
 }
 
 void obterAcaoCotrole()
@@ -170,29 +229,13 @@ void obterAcaoCotrole()
 void criarByteCtrl()
 {
   byteCtrlL = (estadoAtual << 4) | acaoAtual;
-  byteCtrlH = (estadoPorta << 5) | (alertaFumaca << 4) | telaAtual;
+  byteCtrlH = (CtrlLamp << 8) | (estadoPorta << 5) | (alertaFumaca << 4) | telaAtual;
   byteCtrl  = (byteCtrlH << 8)   | byteCtrlL;
-  // Serial.print("O byte de controle montado he: ");
-  // Serial.println(byteCtrl, BIN);
-
-  // Serial.print("O valor da Tela Atual he: ");
-  // Serial.println(telaAtual, BIN);
-  // Serial.println("");
-  // Serial.print("O valor do Estado Atual he: ");
-  // Serial.println(estadoAtual, BIN);
-  // Serial.println("");
-  // Serial.print("O valor da Acao Atual he: ");
-  // Serial.println(acaoAtual, BIN);
-  // Serial.println("");
-  // Serial.print("O valor do Estado da porta Atual he: ");
-  // Serial.println(estadoPorta, BIN);
-  // Serial.println("");
-  // Serial.print("O valor do alerta fumaca he: ");
-  // Serial.println(alertaFumaca, BIN);
 }
 
 void controleDisplay()
 {
+  if (telaAtual != 0x09) telaOld = telaAtual;
   if (alertaFumaca == 0x01)
   {
     telaAtual = 0x09;
@@ -202,10 +245,10 @@ void controleDisplay()
     delay(850);
   } else
   {
+    telaAtual = telaOld;
     if (acaoRealizada == false)Serial.println("NENHUMA ACAO DETECTADA!");
     else                       Serial.println("ACAO DETECTADA, FEZENDO O CONTROLE...");
     
-    if (telaAtual == 0x06) telaAtual = 0x03;
     switch (telaAtual)
     {
       case 0x00: // Tela atual
@@ -275,7 +318,7 @@ void controleDisplay()
             Serial.println("ICONE DAS LAMPADAS");
             if (acaoRealizada == true)
             {
-              switch (acaoAtual)
+              switch (acaoAtual) 
               {
                 case 0x00:
                   telaAtual   = 0x05; //Selecionar o Icone
@@ -307,21 +350,21 @@ void controleDisplay()
         }
         else
         {
-        switch (estadoPorta)
-        {
-          case 0x04:
-            Serial.println("Porta Fechada");
-            telaAtual = 0x06;
-            break;
-          case 0x05:
-            Serial.println("Porta Aberta");
-            telaAtual = 0x07;
-            break;
-          case 0x06:
-            Serial.println("Porta Trancada");
-            telaAtual = 0x08;
-            break;
-        }
+          switch (estadoPorta)
+          {
+            case 0x04:
+              Serial.println("Porta Fechada");
+              telaAtual = 0x06;
+              break;
+            case 0x05:
+              Serial.println("Porta Aberta");
+              telaAtual = 0x07;
+              break;
+            // case 0x06:
+            //   Serial.println("Porta Trancada");
+            //   telaAtual = 0x08;
+            //   break;
+          }
         }
         break;
 
@@ -331,16 +374,18 @@ void controleDisplay()
         break;
 
       case 0x05: // Tela atual
-        // estadoAtual = 0x00;
         Serial.println("MENU DAS LAMPADAS");
         switch (estadoAtual)
         {
-          case 0x02:
+          case 0x02: // Estado atual
             Serial.println("LAMPADA 1");
             if (acaoRealizada == true)
             {
               switch (acaoAtual)
               {
+                case 0x00:
+                  lampOn1 = !lampOn1;
+                  break; 
                 case 0x01:
                   estadoAtual = 0x03;
                   break;
@@ -357,12 +402,16 @@ void controleDisplay()
               }
             }
             break;
+
           case 0x03: // Estado atual
             Serial.println("LAMPADA 2");
             if (acaoRealizada == true)
             {
               switch (acaoAtual)
               {
+                case 0x00:
+                  lampOn2 = !lampOn2;
+                  break; 
                 case 0x02:
                   estadoAtual = 0x00;
                   break;
@@ -378,50 +427,40 @@ void controleDisplay()
               }
             }
             break;
-//          case 0x04: // Estado atual
-//            Serial.println("LAMPADA 3");
-//            if (acaoRealizada == true)
-//            {
-//              switch (acaoAtual)
-//              {
-//                case 0x02:
-//                  estadoAtual = 0x00;
-//                  break;
-//                case 0x03:
-//                  estadoAtual = 0x02;
-//                  break;
-//                case 0x04:
-//                  estadoAtual = 0x03;
-//                  break;
-//              }
-//            }
-//            break;
+
           case 0x00: // Estado atual
+            Serial.println("LAMPADA 3");
+            if (acaoRealizada == true)
+            {
+              switch (acaoAtual)
+              {
+                case 0x00:
+                  lampOn3 = !lampOn3;
+                  break; 
+                case 0x03:
+                  estadoAtual = 0x01;
+                  break;
+                case 0x04:
+                  estadoAtual = 0x03;
+                  break;
+                case 0x01:
+                  estadoAtual = 0x01;
+                  break;
+                case 0x02:
+                  estadoAtual = 0x03;
+              }
+            }
+            break;
+
+          case 0x01: // Estado atual
             Serial.println("LAMPADA 4");
             if (acaoRealizada == true)
             {
               switch (acaoAtual)
               {
-                case 0x03:
-                  estadoAtual = 0x01;
-                  break;
-                case 0x04:
-                  estadoAtual = 0x03;
-                  break;
-                case 0x01:
-                  estadoAtual = 0x01;
-                  break;
-                case 0x02:
-                  estadoAtual = 0x03;
-              }
-            }
-            break;
-          case 0x01: // Estado atual
-            Serial.println("LAMPADA 5");
-            if (acaoRealizada == true)
-            {
-              switch (acaoAtual)
-              {
+                case 0x00:
+                  lampOn4 = !lampOn4;
+                  break; 
                 case 0x01:
                   estadoAtual = 0x00;
                   break;
@@ -441,6 +480,7 @@ void controleDisplay()
         break;
 
       case 0x06: 
+        // if (estadoPorta == 0x05) telaAtual = 0x07;
         if (acaoRealizada == true)
         {
           switch (acaoAtual)
@@ -464,6 +504,10 @@ void controleDisplay()
               break;  
           }
         }
+        criarByteCtrl();
+        enviarControle();
+        delay(3500);
+        telaAtual = 0x03;
         break;
       case 0x08: 
         if (acaoRealizada == true)
