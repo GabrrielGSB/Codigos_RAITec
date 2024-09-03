@@ -13,7 +13,7 @@
 unsigned long tempoAntigo = 0;
 unsigned long tempoAtual;
 
-uint16_t  intervalo = 100,
+uint16_t  intervalo = 2000,
           danger;
 
 uint32_t byteCtrl    = 0;
@@ -21,7 +21,7 @@ uint32_t byteCtrlOld = 0;
 uint32_t byteCtrlH   = 0;
 uint32_t CtrlLamp    = 0;
 
-int corrente = 0;
+float corrente = 15.45;
 
 byte byteCtrlL    = 0x00;
 byte acaoAtual    = 0x00;
@@ -61,7 +61,7 @@ void setup()
   pinMode(lamp4, OUTPUT);
   pinMode(fumaca, INPUT);
   pinMode(ESPcomand, INPUT);
-  pinMode(Isensor, INPUT);
+//  pinMode(Isensor, INPUT);
 
 }
 
@@ -82,6 +82,7 @@ void loop()
     controleDisplay();
     Serial.println(byteCtrl,HEX);
     if (byteCtrl != byteCtrlOld) enviarControle();
+//    enviarControle();
   }
 }
 
@@ -122,18 +123,17 @@ void estadoLampadas()
 
 void enviarControle()
 {
-  int cor = 4;
   Wire.begin();
   Wire.beginTransmission(8); 
   Wire.write((byte*)&byteCtrl, sizeof(byteCtrl));
   Wire.endTransmission();
   Wire.end();
-
-  // Wire.begin();
-  // Wire.beginTransmission(8); 
-  // Wire.write((byte*)&cor, sizeof(cor));
-  // Wire.endTransmission();
-  // Wire.end();
+//Wire.begin();
+//Wire.beginTransmission(8);
+//Wire.write((byte*)&corrente, sizeof(corrente));
+//Wire.endTransmission();
+//Wire.end();
+//Serial.println("Mensagem enviada para o escravo");
 }
 
 void obterAcaoCotrole()
@@ -229,8 +229,8 @@ void obterAcaoCotrole()
 void criarByteCtrl()
 {
   byteCtrlL = (estadoAtual << 4) | acaoAtual;
-  byteCtrlH = (CtrlLamp << 8) | (estadoPorta << 5) | (alertaFumaca << 4) | telaAtual;
-  byteCtrl  = (byteCtrlH << 8)   | byteCtrlL;
+  byteCtrlH = (CtrlLamp    << 8) | (estadoPorta << 5) | (alertaFumaca << 4) | telaAtual;
+  byteCtrl  = (byteCtrlH   << 8) | byteCtrlL;
 }
 
 void controleDisplay()
