@@ -50,18 +50,19 @@ byte estadoLampada = 0x00;
 
 unsigned long tempoAntigo = 0;
 unsigned long tempoAtual;
-uint16_t intervalo = 1000;
+uint16_t intervalo = 2000;
 
 void setup() 
 {
   //CONFIGURAÇÕES INICIAIS DO DISPLAY
   Wire.begin(8); // Endereço do escravo é 8
-  Wire.onReceive(receiveEvent); // Registra a função de evento de recepção
+  Wire.onReceive(receiveEvent);
   Serial.begin(9600);
   tft.begin(0x9341);
   tft.setRotation(0);
   tft.fillScreen(WHITE);
   //---------------------------------
+//  exibirLCD(correnteRMS);
   Intro();
 }
 
@@ -93,6 +94,7 @@ void controleDisplay()
 
 void receiveEvent(int howMany)
 {
+  
   lowByte  = Wire.read();
   highByte = Wire.read(); 
   lampByte = Wire.read();
@@ -102,7 +104,15 @@ void receiveEvent(int howMany)
 
   Serial.print("byte recebido: ");
   Serial.println(byteCtrl, HEX);
-  tft.begin(0x9341);
+
+//  while (Wire.available()) 
+//  {
+//    Wire.readBytes((byte*)&correnteRMS, sizeof(correnteRMS));
+//    Serial.println(correnteRMS);
+//  }
+//  tft.begin(0x9341);
+//  exibirLCD(correnteRMS);
+  
   controleDisplay();
 }
 
@@ -249,8 +259,6 @@ void Menus(uint16_t estado)
   tft.setCursor(30, 260);
   tft.setTextColor(WHITE);
   tft.println(" Lampadas ");
-
-  // delay(4000);
   //----------------------------------------------
 }
 
@@ -442,23 +450,30 @@ void Lampadas(uint16_t estado) {
     tft.drawLine(x + 10, y + 10, x + 15, y + 15, YELLOW);
   };
 
+
+  if ((estadoLampada & 0x1) == 0x1) drawRays(70, 70);
+  if ((estadoLampada & 0x8) == 0x8) drawRays(70, 220);
+  if ((estadoLampada & 0x2) == 0x2) drawRays(205, 50);
+  if ((estadoLampada & 0x4) == 0x4) drawRays(185, 220);
   switch (estado)
   {
     case 3:
+
+    
       tft.drawCircle(70, 70, 15, YELLOW);
-      if (estadoLampada == 0x1) drawRays(70, 70);  // Desenha raios de luz
+        // Desenha raios de luz
       break;
     case 2:
       tft.drawCircle(70, 220, 15, YELLOW);
-      if (estadoLampada == 0x8) drawRays(70, 220);  // Desenha raios de luz
+        // Desenha raios de luz
       break;
     case 4:
       tft.drawCircle(205, 50, 15, YELLOW);
-      if (estadoLampada == 0x2) drawRays(205, 50);  // Desenha raios de luz
+        // Desenha raios de luz
       break;
     case 1:
       tft.drawCircle(185, 220, 15, YELLOW);
-      if (estadoLampada == 0x4) drawRays(185, 220);  // Desenha raios de luz
+        
       break;
   }
 }
