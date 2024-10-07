@@ -3,7 +3,7 @@
 #define controlY       A1
 #define fumaca         A2
 #define controlBtt     3
-#define lamp1          4
+#define lamp1          4                                                                                                                        
 #define lamp2          5
 #define lamp3          6
 #define lamp4          7
@@ -13,7 +13,7 @@
 unsigned long tempoAntigo = 0;
 unsigned long tempoAtual;
 
-uint16_t  intervalo = 2000,
+uint16_t  intervalo = 100,
           danger;
 
 uint32_t byteCtrl    = 0;
@@ -21,7 +21,7 @@ uint32_t byteCtrlOld = 0;
 uint32_t byteCtrlH   = 0;
 uint32_t CtrlLamp    = 0;
 
-float corrente = 15.45;
+float corrente = 15.454;
 
 byte byteCtrlL    = 0x00;
 byte acaoAtual    = 0x00;
@@ -59,7 +59,12 @@ void setup()
   pinMode(lamp2, OUTPUT);
   pinMode(lamp3, OUTPUT);
   pinMode(lamp4, OUTPUT);
-  pinMode(fumaca, INPUT);
+  digitalWrite(lamp1,LOW);
+  digitalWrite(lamp2,LOW);
+  digitalWrite(lamp3,LOW);
+  digitalWrite(lamp4,LOW);
+  
+//  pinMode(fumaca, INPUT);
   pinMode(ESPcomand, INPUT);
 //  pinMode(Isensor, INPUT);
 
@@ -74,7 +79,7 @@ void loop()
     acaoRealizada = false;
     
     byteCtrlOld = byteCtrl;
-    detectarFumaca();
+//    detectarFumaca();
     detectarPorta();
     estadoLampadas();
     obterAcaoCotrole();
@@ -111,14 +116,14 @@ void estadoLampadas()
   if (lampOn4) CtrlLamp = (CtrlLamp | 0x8);
   else         CtrlLamp = (CtrlLamp & 0x7);
 
-  if (lampOn1) digitalWrite(lamp1, HIGH);
-  else         digitalWrite(lamp1, LOW );
-  if (lampOn2) digitalWrite(lamp2, HIGH);
-  else         digitalWrite(lamp2, LOW );
-  if (lampOn3) digitalWrite(lamp3, HIGH);
-  else         digitalWrite(lamp3, LOW );
-  if (lampOn4) digitalWrite(lamp4, HIGH);
-  else         digitalWrite(lamp4, LOW );
+  if (lampOn1) digitalWrite(lamp1, LOW);
+  else         digitalWrite(lamp1, HIGH );
+  if (lampOn2) digitalWrite(lamp2, LOW);
+  else         digitalWrite(lamp2, HIGH );
+  if (lampOn3) digitalWrite(lamp3, LOW);
+  else         digitalWrite(lamp3, HIGH );
+  if (lampOn4) digitalWrite(lamp4, LOW);
+  else         digitalWrite(lamp4, HIGH );
 }
 
 void enviarControle()
