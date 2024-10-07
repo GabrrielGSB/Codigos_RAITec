@@ -59,7 +59,7 @@ void setup()
   Wire.onReceive(receiveEvent);
   Serial.begin(9600);
   tft.begin(0x9341);
-  tft.setRotation(0);
+  tft.setRotation(2);
   tft.fillScreen(WHITE);
   //---------------------------------
 //  exibirLCD(correnteRMS);
@@ -105,19 +105,19 @@ void receiveEvent(int howMany)
   Serial.print("byte recebido: ");
   Serial.println(byteCtrl, HEX);
 
-//  while (Wire.available()) 
-//  {
-//    Wire.readBytes((byte*)&correnteRMS, sizeof(correnteRMS));
-//    Serial.println(correnteRMS);
-//  }
-//  tft.begin(0x9341);
-//  exibirLCD(correnteRMS);
+  while (Wire.available()) 
+  {
+    Wire.readBytes((byte*)&correnteRMS, sizeof(correnteRMS));
+    Serial.println(correnteRMS);
+  }
+  tft.begin(0x9341);
   
   controleDisplay();
 }
 
 void Intro() 
 {
+  tft.setRotation(2);
   tft.fillScreen(WHITE);
   tft.setCursor(10, 75);
   tft.setTextColor(PURPLE);
@@ -155,6 +155,7 @@ void Intro()
 
 void Intro2() 
 {
+  tft.setRotation(2);
   tft.fillScreen(BLACK);
   const int numStars = 100;
   int starX[numStars], starY[numStars];
@@ -209,7 +210,7 @@ void Menus(uint16_t estado)
     starX[i] = random(tft.width());
     starY[i] = random(tft.height());
   }
-
+  tft.setRotation(2);
   tft.fillScreen(BLACK);
   // Draw stars with twinkling
   for (int i = 0; i < numStars; i++) {
@@ -264,6 +265,7 @@ void Menus(uint16_t estado)
 
 void PortaFechada() 
 {
+  tft.setRotation(2);
   tft.fillScreen(BLACK);
   tft.setTextColor(RED);
   tft.setTextSize(3);
@@ -283,6 +285,7 @@ void PortaFechada()
 
 void PortaAberta() 
 {
+  tft.setRotation(2);
   tft.fillScreen(BLACK);
   tft.setTextColor(GREEN);
   tft.setTextSize(4);
@@ -338,6 +341,7 @@ void PortaAberta()
 
 void PortaTrancada() 
 {
+  tft.setRotation(2);
   tft.fillScreen(BLACK);
 
   tft.setTextColor(RED);
@@ -382,6 +386,7 @@ void PortaTrancada()
 
 void FumacaDetectada() 
 {
+  tft.setRotation(2);
   int x = 110;
   int y = 230;
   int size = 90;
@@ -480,6 +485,7 @@ void Lampadas(uint16_t estado) {
 
 void exibirLCD(float correnteRMS) 
 {
+  tft.setRotation(2);
   tft.fillScreen(BLACK);
 
   tft.setCursor(0, 35);
