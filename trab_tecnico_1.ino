@@ -8,6 +8,7 @@
 #define lamp3          6
 #define lamp4          7
 #define ESPcomand      8
+#define controlPorta   13
 
 
 unsigned long tempoAntigo = 0;
@@ -48,6 +49,8 @@ bool lampOn1 = 0,
      lampOn4 = 0;
 bool ESPcom;
 
+int sen;
+
 void setup()
 {
   Serial.begin(9600);
@@ -59,12 +62,13 @@ void setup()
   pinMode(lamp2, OUTPUT);
   pinMode(lamp3, OUTPUT);
   pinMode(lamp4, OUTPUT);
+  pinMode(controlPorta, OUTPUT);
   digitalWrite(lamp1,LOW);
   digitalWrite(lamp2,LOW);
   digitalWrite(lamp3,LOW);
   digitalWrite(lamp4,LOW);
-  
-//  pinMode(fumaca, INPUT);
+  digitalWrite(controlPorta, LOW);
+  pinMode(fumaca, INPUT);
   pinMode(ESPcomand, INPUT);
 //  pinMode(Isensor, INPUT);
 
@@ -79,7 +83,7 @@ void loop()
     acaoRealizada = false;
     
     byteCtrlOld = byteCtrl;
-//    detectarFumaca();
+    detectarFumaca();
     detectarPorta();
     estadoLampadas();
     obterAcaoCotrole();
@@ -87,21 +91,28 @@ void loop()
     controleDisplay();
     Serial.println(byteCtrl,HEX);
     if (byteCtrl != byteCtrlOld) enviarControle();
-//    enviarControle();
   }
 }
 
 void detectarPorta()
 {
   ESPcom = digitalRead(ESPcomand);
-  if (ESPcom) estadoPorta = 0x05;
-  else        estadoPorta = 0x06;
+  if (ESPcom) 
+  {
+    estadoPorta = 0x05;
+    digitalWrite(controlPorta, HIGH);
+  }
+  else
+  {
+    estadoPorta = 0x06;
+    digitalWrite(controlPorta, LOW);
+  }
 }
 
 void detectarFumaca()
 {
   danger = analogRead(fumaca);
-  if (danger >= 550) alertaFumaca = 0x01;
+  if (danger >= 500) alertaFumaca = 0x01;
   else               alertaFumaca = 0x00;          
 }
 
