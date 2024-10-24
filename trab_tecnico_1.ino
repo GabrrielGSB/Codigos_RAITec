@@ -2,6 +2,7 @@
 #define controlX       A0
 #define controlY       A1
 #define fumaca         A2
+#define Isensor        A3
 #define controlBtt     3
 #define lamp1          4                                                                                                                        
 #define lamp2          5
@@ -24,13 +25,15 @@ uint32_t CtrlLamp    = 0;
 
 float corrente = 15.454;
 
-byte byteCtrlL    = 0x00;
-byte acaoAtual    = 0x00;
-byte telaAtual    = 0x00;
-byte telaOld      = 0x00;
-byte estadoAtual  = 0x00;
-byte estadoPorta  = 0x04;
-byte alertaFumaca = 0x00;
+byte byteCtrlL    = 0x00,
+     acaoAtual    = 0x00,
+     telaAtual    = 0x00,
+     telaOld      = 0x00,
+     estadoAtual  = 0x00,
+     estadoPorta  = 0x04,
+     alertaFumaca = 0x00;
+
+byte dados_para_enviar[5];
 
 bool acaoRealizada  = false;
 bool oneBtt         = 0,
@@ -55,22 +58,25 @@ void setup()
 {
   Serial.begin(9600);
 
-  pinMode(controlX,   INPUT);
-  pinMode(controlY,   INPUT);
-  pinMode(controlBtt, INPUT);
-  pinMode(lamp1, OUTPUT);
-  pinMode(lamp2, OUTPUT);
-  pinMode(lamp3, OUTPUT);
-  pinMode(lamp4, OUTPUT);
+  pinMode(controlX,     INPUT);
+  pinMode(controlY,     INPUT);
+  pinMode(controlBtt,   INPUT);
+  pinMode(fumaca,       INPUT);
+  pinMode(ESPcomand,    INPUT);
+  pinMode(Isensor,      INPUT);
+  pinMode(lamp1,        OUTPUT);
+  pinMode(lamp2,        OUTPUT);
+  pinMode(lamp3,        OUTPUT);
+  pinMode(lamp4,        OUTPUT);
   pinMode(controlPorta, OUTPUT);
-  digitalWrite(lamp1,LOW);
-  digitalWrite(lamp2,LOW);
-  digitalWrite(lamp3,LOW);
-  digitalWrite(lamp4,LOW);
+
+  digitalWrite(lamp1,        LOW);
+  digitalWrite(lamp2,        LOW); 
+  digitalWrite(lamp3,        LOW);
+  digitalWrite(lamp4,        LOW);
   digitalWrite(controlPorta, LOW);
-  pinMode(fumaca, INPUT);
-  pinMode(ESPcomand, INPUT);
-//  pinMode(Isensor, INPUT);
+  
+
 
 }
 
@@ -87,11 +93,55 @@ void loop()
     detectarPorta();
     estadoLampadas();
     obterAcaoCotrole();
+    calcularCorrente(); 
     criarByteCtrl();
     controleDisplay();
-    Serial.println(byteCtrl,HEX);
     if (byteCtrl != byteCtrlOld) enviarControle();
+    Serial.println(byteCtrl,HEX);
   }
+}
+
+void criarByteCtrl()
+{
+  byte* ItoByte = (byte*)&corrente;
+   
+  dados_para_enviar[0] = (estadoAtual << 4) | acaoAtual;
+  dados_para_enviar[1] = (estadoPorta << 5) | (alertaFumaca << 4) | telaAtual;
+  dados_para_enviar[2] = CtrlLamp;
+  dados_para_enviar[3] = ItoByte[0];
+  dados_para_enviar[4] = ItoByte[1];
+  
+//  byteCtrlL = (estadoAtual << 4) | acaoAtual; 
+//  byteCtrlH = (CtrlLamp    << 8) | (estadoPorta << 5) | (alertaFumaca << 4) | telaAtual; 
+//  byteCtrl  = (byteCtrlH   << 8) | byteCtrlL;
+}
+
+void enviarControle()
+{
+  Wire.begin();
+  Wire.beginTransmission(8); 
+  Wire.write(dados_para_enviar, sizeof(dados_para_enviar));
+  Wire.endTransmission();
+  Wire.end();
+}
+
+void calcularCorrente() 
+{
+  //- Para 30A, sensibilidade = 0.066;
+  //- Para 20A, sensibilidade = 0.100;
+  //- Para 5A,  sensibilidade = 0.185;
+  long somaDasCorrentes = 0, mediaDasCorrentes;
+  
+  for (int i = 0; i < 1000; i++) 
+  {
+    somaDasCorrentes += pow((analogRead(A3) - 509), 2);
+    delay(1);
+  }
+  
+  mediaDasCorrentes = sqrt(somaDasCorrentes / 1000.0);
+  corrente = (mediaDasCorrentes) * (5.000) / (1023.000 * 0.100);
+  
+//  if (mediaDasCorrentes == 1) return 0;
 }
 
 void detectarPorta()
@@ -137,20 +187,6 @@ void estadoLampadas()
   else         digitalWrite(lamp4, HIGH );
 }
 
-void enviarControle()
-{
-  Wire.begin();
-  Wire.beginTransmission(8); 
-  Wire.write((byte*)&byteCtrl, sizeof(byteCtrl));
-  Wire.endTransmission();
-  Wire.end();
-//Wire.begin();
-//Wire.beginTransmission(8);
-//Wire.write((byte*)&corrente, sizeof(corrente));
-//Wire.endTransmission();
-//Wire.end();
-//Serial.println("Mensagem enviada para o escravo");
-}
 
 void obterAcaoCotrole()
 {
@@ -238,15 +274,6 @@ void obterAcaoCotrole()
    oneUp = 0;
    onePastUp = oneUp;
   }
-
-
-}
-
-void criarByteCtrl()
-{
-  byteCtrlL = (estadoAtual << 4) | acaoAtual;
-  byteCtrlH = (CtrlLamp    << 8) | (estadoPorta << 5) | (alertaFumaca << 4) | telaAtual;
-  byteCtrl  = (byteCtrlH   << 8) | byteCtrlL;
 }
 
 void controleDisplay()
