@@ -1,5 +1,4 @@
 import serial
-import time
 import csv
 
 # Inicializa a variável de controle para o CSV
@@ -8,7 +7,7 @@ equipeRecebida = False
 tempoRecebido  = False
 
 
-ser = serial.Serial('/dev/ttyUSB0', 115200) # Configura a porta serial (substitua 'COM6' pela sua porta)
+ser = serial.Serial('/dev/ttyACM0', 115200) # Configura a porta serial (substitua 'COM6' pela sua porta)
 csv_filename = 'dados_equipes.csv'          # Arquivo CSV para salvar os dados
 
 # Função para enviar dados serial
@@ -49,9 +48,6 @@ try:
 
             if equipeRecebida == False: equipe = ""
             if tempoRecebido  == False: tempo  = ""
-
-            # start_time = time.time()
-            # timeout = 3  # Tempo máximo de espera em segundos
 
             # Recebe dados (se houver)
             while ((equipeRecebida and tempoRecebido) == False):
