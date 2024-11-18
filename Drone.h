@@ -9,6 +9,29 @@
 #include <Adafruit_Sensor.h>
 #include <Wire.h>
 
+struct Data{
+    int motor1, motor2, motor3, motor4, tempo;
+
+    float roll, pitch, kRoll, kPitch;
+
+  
+
+  void setMotors(int m1, int m2, int m3, int m4){
+    motor1 = m1;
+    motor2 = m2;
+    motor3 = m3;
+    motor4 = m4;
+  }
+
+  void setAngle(float r, float p, float kR, float kP, int t){
+    roll   = r;
+    pitch  = p;
+    kRoll  = kR;
+    kPitch = kP;
+    tempo   = t;
+  }
+  
+};
 
 class Drone{
 private:
@@ -16,21 +39,26 @@ private:
   
 public:
 
+
     Drone();
 
-    String coletorDados = "";
+    String dataColeter = "";
 
     bool calibration; //Calibração dos controles.
 
+
     uint8_t INPin1,INPin2, INPin3, INPin4;     //Valores ods pinos.
 
+
     uint32_t LoopTimer; // Definição do timer que vai controlar a freq de controle do motor.
+
 
     int ThrottleIdle, ThrottleCutOff, //Valor inicial e de desiligamento das helices.
         CH1, CH2, CH3, CH4, //Estado dos controles.
         MotorVeloci1, MotorVeloci2, MotorVeloci3, MotorVeloci4, // Variáveis de controle da velocidade dos motores.
         speed1, speed2, speed3, speed4, //Valor das velocidades.
         count, Timer1, Timer2; //Outros
+
 
         //Kalman
     float KalmanGain, KalmanAngleRoll, KalmanUncertaintyAngleRoll, KalmanAnglePitch, KalmanUncertaintyAnglePitch, //Ajuste dos valores.
@@ -54,7 +82,11 @@ public:
           AceX, AceY, AceZ, Temp,
           GyrXc, GyrYc, GyrZc,
           AngleRoll, AnglePitch;
+
+  struct Data datas;
         
+
+
 	void Kalman1D(float &KalmanState,float &KalmanUncertainty, const float &KalmanInput, 
 					      const float &KalmanMeasurement);
     void CalibrarMPU();
@@ -72,6 +104,7 @@ public:
                           const int &pin8);
     void MainControlLoop();
 
+
     //Funções de facilidade
     void pid_angle();
     void pid_rate();
@@ -81,5 +114,8 @@ public:
     void updatePID(int adress,float mod);
     void sendData(WiFiClient &client);
 };
+
+
+
 
 #endif

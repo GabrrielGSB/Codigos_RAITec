@@ -2,6 +2,7 @@
 // ESP8266 Guide: https://randomnerdtutorials.com/esp8266-nodemcu-mpu-6050-accelerometer-gyroscope-arduino/
 // Arduino Guide: https://randomnerdtutorials.com/arduino-mpu-6050-accelerometer-gyroscope/
 #include "Drone.h"
+#include <iostream>
 
 //*****************************************ORGNIAZAÇÃO DO DRONE*******************************************
 Drone::Drone()
@@ -61,10 +62,9 @@ void Drone::Kalman1D(float &KalmanState,float &KalmanUncertainty, const float &K
 	KalmanUncertainty = (1 - KalmanGain)*KalmanUncertainty;
 }
 //********************************************************************************************************
-void Drone::updatePID(int adress,float mod)
-{	
-	switch(adress)
-	{
+void Drone::updatePID(int adress,float mod){	
+  
+	switch(adress){
 		case 0:
 			PAngleRoll  += mod;
 			PAnglePitch += mod;
@@ -119,7 +119,7 @@ void Drone::updatePID(int adress,float mod)
 //********************************************************************************************************
 void Drone::MainControlSetup(const int &serial, const int &pin1, const int &pin2, const int &pin3, 
                              const int &pin4,   const int &pin5, const int &pin6, const int &pin7, 
-                             const int &pin8) 
+                             const int &pin8)
 {
 	INPin1 = pin1;
   	INPin2 = pin2;
@@ -141,8 +141,7 @@ void Drone::MainControlSetup(const int &serial, const int &pin1, const int &pin2
 	CalibrarMPU();
 }
 //********************************************************************************************************
-void Drone::MainControlLoop()
-{
+void Drone::MainControlLoop(){
 	//##############################FILTRO DE KALMAN############################
 
 	//Filtrando os Angulos de Pitch e Roll
@@ -216,7 +215,9 @@ void Drone::MainControlLoop()
 	controlSpeed(speed4,3);
   	
 	//Print dos valores para visualização do input aos motores
-	//Serial.printf("Motor1: %d, Motor2 %d, Motor3 %d, Motor4 %d \n", MotorVeloci1, MotorVeloci2, MotorVeloci3, MotorVeloci4);
+	Serial.printf("Motor1: %d, Motor2: %d, Motor3: %d, Motor4: %d, ", MotorVeloci1, MotorVeloci2, MotorVeloci3, MotorVeloci4);
+	dataColeter = "Motor1: " , MotorVeloci1 , " , Motor2: " , MotorVeloci2 , ", Motor3: " , MotorVeloci3 , ", Motor4: " , MotorVeloci4 , ", ";
+	datas.setMotors(MotorVeloci1, MotorVeloci2, MotorVeloci3, MotorVeloci4);
 
 	//Print dos valores para visualização do input aos motores
 	// Serial.printf("Motor1: %d, Motor2 %d, Motor3 %d, Motor4 %d \n", speed1, speed2, speed3, speed4);
@@ -267,6 +268,10 @@ void Drone::CalibrarMPU()
 	calibration = true;
 }
 //********************************************************************************************************
+// void Drone::setCalibrationValues()
+// {
+// }
+//********************************************************************************************************
 void Drone::MPUgetSignalsLoop() 
 {	
   sensors_event_t a, g, temp;
@@ -301,11 +306,11 @@ void Drone::DisplaySerialMpuData()
 	{
 		Timer1 = millis();
 		
-		Serial.printf("AceX %f AceY %f, AceZ %f \n", AceX, AceY, AceZ);
+		Serial.printf("ang: %f \n", AceX);
 	
-		Serial.printf("RateRoll: %f RatePitch %f RateYaw %f \n", RateRoll, RatePitch, RateYaw);
+		//Serial.printf("RateRoll: %f RatePitch %f RateYaw %f \n", RateRoll, RatePitch, RateYaw);
 		
-		Serial.printf("Angulo Roll %f\n Angulo Pitch %f\n", AngleRoll, AnglePitch);
+		//Serial.printf("Angulo Roll %f\n Angulo Pitch %f\n", AngleRoll, AnglePitch);
 	}
 }
 //********************************************************************************************************
@@ -318,8 +323,11 @@ void Drone::DisplayPlotterMpuData()
 	if ((millis() - Timer2) >= 10){
 		Timer2 = millis();
 		
-		Serial.printf("Angle_Roll: %f, Angle_Pitch: %f, Kalman_Angle_Roll: %f, Kalman_Angle_Pitch: %f\n", 
-		AngleRoll, AnglePitch, KalmanAngleRoll, KalmanAnglePitch);
+		Serial.printf("Angle_Roll: %f, Angle_Pitch: %f, Kalman_Angle_Roll: %f, Kalman_Angle_Pitch: %f, Tempo: %d \n", 
+		AngleRoll, AnglePitch, KalmanAngleRoll, KalmanAnglePitch, millis());
+
+		dataColeter += "Angle_Roll: " , AngleRoll, " , Angle_Pitch: " , AnglePitch , ", Kalman_Angle_Roll: " , KalmanAngleRoll , ", Kalman_Angle_Pitch: " , KalmanAnglePitch, ", Tempo: " , millis() , " \n" ;
+		datas.setAngle(AngleRoll, AnglePitch, KalmanAngleRoll, KalmanAnglePitch, millis());
 
 		//Serial.println(GyrZ);
 	}
@@ -338,7 +346,7 @@ void Drone::controlSpeed(int &speed, int ch)
 	// min_sped=257 max_sped=511 para resolução = 10 bits
 	ledcWrite(ch, speed); // Função para mudança do PWM na ESP32
 }
-//********************************************************************************************************esiredAngleRoll)
+//********************************************************************************************************
 void Drone::readPWMSetup(const uint8_t &PinX)
 {
 	// Função para adequar os pinos que vão receber o PWM do controlador
@@ -354,6 +362,7 @@ void Drone::readPWMLoop_SM(int pinX, int ch)
 	Serial.print(" = ");	
 	Serial.println(pulseIn(pinX, HIGH));
 	Serial.println(" ");
+
 }
 //********************************************************************************************************
 int Drone::readPWMLoop(const uint8_t &PinX)
@@ -384,6 +393,7 @@ void Drone::pid_equation(const float &Error, const float &P , const float &I, co
 void Drone::pid_angle()
 {
 	pid_equation(ErrorAngleRoll, PAngleRoll, IAngleRoll, DAngleRoll, PrevErrorAngleRoll, PrevItermAngleRoll, DesiredRateRoll); 
+
 	pid_equation(ErrorAnglePitch, PAnglePitch, IAnglePitch, DAnglePitch, PrevErrorAnglePitch, PrevItermAnglePitch, DesiredRatePitch);
 }
 //********************************************************************************************************
@@ -394,8 +404,14 @@ void Drone::pid_rate()
 	ErrorRateYaw   = DesiredRateYaw   - RateYaw;   // ...
 
 	pid_equation(ErrorRateRoll, PRateRoll, IRateRoll, DRateRoll, PrevErrorRateRoll, PrevItermRateRoll, InputRoll);
+
 	pid_equation(ErrorRatePitch, PRatePitch, IRatePitch, DRatePitch, PrevErrorRatePitch, PrevItermRatePitch, InputPitch);
+
 	pid_equation(ErrorRateYaw, PRateYaw, IRateYaw, DRateYaw, PrevErrorRateYaw, PrevItermRateYaw, InputYaw);
+
 }
 //********************************************************************************************************
-
+void Drone::sendData(WiFiClient &client){
+	client.write((uint8_t*) &datas, sizeof(Data));
+	//client.print(dataColeter);
+}
