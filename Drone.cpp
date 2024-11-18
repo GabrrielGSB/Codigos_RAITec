@@ -105,7 +105,7 @@ void Drone::updatePID(int adress,float mod)
 			PRateRoll  = PRatePitch  = 0.6;
 			IRateRoll  = IRatePitch  = 3.5;
 			DRateRoll  = DRatePitch  = 0.03;
-			PRateYaw                 = 1;esiredAngleRoll)
+			PRateYaw                 = 1;
 			IRateYaw                 = 6;
 			DRateYaw                 = 0;
 			break;
@@ -156,7 +156,7 @@ void Drone::MainControlLoop()
 	CH2 = readPWMLoop(INPin2); // ...
 	CH3 = readPWMLoop(INPin3); // ...
 	CH4 = readPWMLoop(INPin4); // ...
-esiredAngleRoll)
+
 	//Visualização do sinal do controle no Monitor Serial
 	//Serial.printf("Canal 1: %d\nCanal 2: %d\nCanal 3: %d\nCanal 4: %d\n", CH1, CH2,CH3,CH4);
 
@@ -199,7 +199,7 @@ esiredAngleRoll)
 	speed1 = map(MotorVeloci1,1000,2000,257,385);
 	speed2 = map(MotorVeloci2,1000,2000,257,385);
 	speed3 = map(MotorVeloci3,1000,2000,257,385);
-	speed4 = map(MotorVeloci4,1000,2000,257,385);esiredAngleRoll)
+	speed4 = map(MotorVeloci4,1000,2000,257,385);
 
 	if (CH3 < 1050) // Medida de segurança para ter certeza do desligamento dos motores
 	{ 
@@ -232,7 +232,7 @@ void Drone::reset_pid()
 
 	PrevErrorAngleRoll = 0; PrevErrorAnglePitch = 0; 
 	PrevItermAngleRoll = 0; PrevItermAnglePitch = 0;
-}esiredAngleRoll)
+}
 //********************************************************************************************************
 void Drone::MPUconfigSetup() 
 {
@@ -262,14 +262,10 @@ void Drone::CalibrarMPU()
 		RateCalibrationPitch += RatePitch;
 		RateCalibrationYaw   += RateYaw;
 		delay(1);
-	}esiredAngleRoll)
+	}
 	
 	calibration = true;
 }
-//********************************************************************************************************
-// void Drone::setCalibrationValues()
-// {
-// }
 //********************************************************************************************************
 void Drone::MPUgetSignalsLoop() 
 {	
@@ -303,7 +299,7 @@ void Drone::DisplaySerialMpuData()
 {	
 	if ((millis() - Timer1) >= 800)
 	{
-		Timer1 = millis();esiredAngleRoll)
+		Timer1 = millis();
 		
 		Serial.printf("AceX %f AceY %f, AceZ %f \n", AceX, AceY, AceZ);
 	
@@ -358,7 +354,6 @@ void Drone::readPWMLoop_SM(int pinX, int ch)
 	Serial.print(" = ");	
 	Serial.println(pulseIn(pinX, HIGH));
 	Serial.println(" ");
-
 }
 //********************************************************************************************************
 int Drone::readPWMLoop(const uint8_t &PinX)
@@ -389,7 +384,6 @@ void Drone::pid_equation(const float &Error, const float &P , const float &I, co
 void Drone::pid_angle()
 {
 	pid_equation(ErrorAngleRoll, PAngleRoll, IAngleRoll, DAngleRoll, PrevErrorAngleRoll, PrevItermAngleRoll, DesiredRateRoll); 
-
 	pid_equation(ErrorAnglePitch, PAnglePitch, IAnglePitch, DAnglePitch, PrevErrorAnglePitch, PrevItermAnglePitch, DesiredRatePitch);
 }
 //********************************************************************************************************
@@ -400,11 +394,8 @@ void Drone::pid_rate()
 	ErrorRateYaw   = DesiredRateYaw   - RateYaw;   // ...
 
 	pid_equation(ErrorRateRoll, PRateRoll, IRateRoll, DRateRoll, PrevErrorRateRoll, PrevItermRateRoll, InputRoll);
-
 	pid_equation(ErrorRatePitch, PRatePitch, IRatePitch, DRatePitch, PrevErrorRatePitch, PrevItermRatePitch, InputPitch);
-
 	pid_equation(ErrorRateYaw, PRateYaw, IRateYaw, DRateYaw, PrevErrorRateYaw, PrevItermRateYaw, InputYaw);
-
 }
 //********************************************************************************************************
 
