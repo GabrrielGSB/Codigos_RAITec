@@ -3,56 +3,50 @@ import serial
 from datetime import datetime
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
-import time
+import multiprocessing
 
-# Gerar um nome de arquivo único com base na data e hora
-timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-csv_file = f"dados_{timestamp}.csv"
+def plot_animation(csv_file):
+    # Inicializa listas para armazenar os dados
+    times = []
+    angle_rolls = []
 
-# Configuração da porta serial
-ser = serial.Serial('COM6', 115200)
+    # Função para atualizar o gráfico em tempo real
+    def update_plot(frame):
+        nonlocal times, angle_rolls
 
-# Cria o novo arquivo e escreve o cabeçalho
-with open(csv_file, mode='w', newline='') as file:
-    writer = csv.writer(file)
-    writer.writerow(['angle_roll', 'angle_pitch', 'Tempo'])
+        with open(csv_file, mode='r') as file:
+            reader = csv.DictReader(file)
+            times = []
+            angle_rolls = []
 
-# Inicializa listas para armazenar os dados
-times = []
-angle_rolls = []
+            # Lê todos os dados do arquivo
+            for row in reader:
+                try:
+                    # Convertendo o tempo para segundos
+                    time_in_seconds = float(row['Tempo']) / 1000  # Se estiver em milissegundos
+                    times.append(time_in_seconds)
+                    angle_rolls.append(float(row['angle_roll']))
+                except ValueError:
+                    continue
 
-# Função para atualizar o gráfico em tempo real
-def update_plot(frame):
-    global times, angle_rolls
-    
-    with open(csv_file, mode='r') as file:
-        reader = csv.DictReader(file)
-        times = []
-        angle_rolls = []
+        # Limpa e atualiza o gráfico
+        ax.clear()
+        ax.plot(times, angle_rolls, label='Angle Roll', color='blue')
+        ax.set_title("Angle Roll vs Time")
+        ax.set_xlabel("Time (s)")  # Unidades em segundos
+        ax.set_ylabel("Angle Roll (degrees)")
+        ax.legend()
+        ax.grid(True)
 
-        # Lê todos os dados do arquivo
-        for row in reader:
-            try:
-                times.append(float(row['Tempo']))
-                angle_rolls.append(float(row['angle_roll']))
-            except ValueError:
-                continue
+    # Configuração do Matplotlib
+    fig, ax = plt.subplots()
+    ani = FuncAnimation(fig, update_plot, interval=250)  # Atualiza a cada 250 ms
+    plt.show()
 
-    # Limpa e atualiza o gráfico
-    ax.clear()
-    ax.plot(times, angle_rolls, label='Angle Roll', color='blue')
-    ax.set_title("Angle Roll vs Time")
-    ax.set_xlabel("Time (s)")
-    ax.set_ylabel("Angle Roll (degrees)")
-    ax.legend()
-    ax.grid(True)
 
-# Configuração do Matplotlib
-fig, ax = plt.subplots()
-ani = FuncAnimation(fig, update_plot, interval=500)  # Atualiza a cada 1 segundo
+def write_to_csv(csv_file):
+    ser = serial.Serial('COM6', 115200)  # Configuração da porta serial
 
-# Processo de escrita no arquivo CSV
-def write_to_csv():
     try:
         while ser.is_open:
             line = ser.readline().decode('utf-8').split(',')
@@ -78,10 +72,25 @@ def write_to_csv():
     finally:
         ser.close()
 
-# Executa a gravação no CSV em um processo separado
-import threading
-thread = threading.Thread(target=write_to_csv, daemon=True)
-thread.start()
 
-# Mostra o gráfico em tempo real
-plt.show()
+if __name__ == "__main__":
+    # Gerar um nome de arquivo único com base na data e hora
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    csv_file = f"dados_{timestamp}.csv"
+
+    # Cria o novo arquivo e escreve o cabeçalho
+    with open(csv_file, mode='w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(['angle_roll', 'angle_pitch', 'Tempo'])
+
+    # Cria processos
+    p1 = multiprocessing.Process(target=plot_animation, args=(csv_file,))
+    p2 = multiprocessing.Process(target=write_to_csv, args=(csv_file,))
+
+    # Inicia processos
+    p1.start()
+    p2.start()
+
+    # Espera os processos terminarem
+    p1.join()
+    p2.join()
