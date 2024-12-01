@@ -1,5 +1,5 @@
 from imports import *
-from myClasses import aba1
+from myClasses import aba1, aba2
 
 class MainWindow(QMainWindow):
   def __init__(self):
@@ -13,9 +13,7 @@ class MainWindow(QMainWindow):
     tabs.setMovable(False)
 
     tabs.addTab(aba1('im1.png'), "aba1")
-    # tabs.addTab(definirPlanoDeFundo('im1.png'), "aba2")
-    # a = definirPlanoDeFundo('im.jpg')
-
+    tabs.addTab(aba2('im1.png'), "aba2")
     self.setCentralWidget(tabs)
     # tabs.setParent(self)
 
