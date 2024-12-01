@@ -1,6 +1,6 @@
 import sys
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QColor, QPalette, QPainter, QPixmap
+from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtGui import QColor, QPalette, QPainter, QPixmap, QFont
 from PyQt5.QtWidgets import (
   QApplication,
   QLabel,
@@ -11,5 +11,11 @@ from PyQt5.QtWidgets import (
   QHBoxLayout,
   QStackedLayout,
   QVBoxLayout,
-  QComboBox
+  QComboBox,
+  QLineEdit,
+  QApplication
 )
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.figure import Figure
+import matplotlib.pyplot as plt
+import numpy as np
