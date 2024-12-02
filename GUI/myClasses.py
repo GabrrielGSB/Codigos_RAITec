@@ -1,34 +1,5 @@
 from imports import *
-import Funcoes as func
-
-class Color(QWidget):
-    def __init__(self, color):
-        super().__init__()
-
-        self.setAutoFillBackground(True)
-        palette = self.palette()
-        palette.setColor(QPalette.Window, QColor(color))
-        self.setPalette(palette)
-
-class DesenharRetangulo(QWidget):
-    def __init__(self, color, largura=100, altura=100, pos_x=0, pos_y=0):
-        super().__init__()
-        self.color = color  # Cor do retângulo
-        self.largura = largura  # Largura do retângulo
-        self.altura = altura  # Altura do retângulo
-        self.pos_x = pos_x  # Posição horizontal
-        self.pos_y = pos_y  # Posição vertical
-
-    def paintEvent(self, event):
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.Antialiasing)  # Habilita bordas suaves
-        
-        # Define a cor do retângulo
-        painter.setBrush(QColor(self.color))
-        painter.setPen(Qt.NoPen)  # Remove bordas
-
-        # Desenha o retângulo na posição especificada
-        painter.drawRect(self.pos_x, self.pos_y, self.largura, self.altura)
+# import Funcoes as func
 
 class definirPlanoDeFundo(QWidget):
     def __init__(self, caminho):
@@ -220,20 +191,16 @@ class aba2(QWidget):
         self.janelaGrafico = None
         
     def mostrar_grafico(self):
-        """
-        Abre uma nova janela com o gráfico gerado pelo matplotlib.
-        """
+        #Abre uma nova janela com o gráfico gerado pelo matplotlib.
         if not self.janelaGrafico:
             self.janelaGrafico = JanelaGrafico()
 
         novoTitulo = self.tituloGrafico.text()
         novaXlabel = self.tituloXlabel.text()
         novaYlabel = self.tituloYlabel.text()
-        if novoTitulo:
+        if novoTitulo or novaXlabel or novaYlabel:
             self.janelaGrafico.grafico.atualizarTitulo(novoTitulo)
-        elif novaXlabel:
             self.janelaGrafico.grafico.atualizarXlabel(novaXlabel)
-        elif novaYlabel:
             self.janelaGrafico.grafico.atualizarYlabel(novaYlabel)
 
         self.janelaGrafico.show()
@@ -260,9 +227,7 @@ class Grafico(FigureCanvas):
         self.plotarGrafico()
 
     def plotarGrafico(self):
-        """
-        Método para criar o gráfico. Pode ser personalizado.
-        """
+        #Método para criar o gráfico. Pode ser personalizado.
         self.graficoMostrado = self.fig.add_subplot(111)
 
         # Gerar dados para o gráfico
@@ -293,17 +258,5 @@ class Grafico(FigureCanvas):
         self.draw()
 
 
-# def definirPlanoDeFundo(imagem):
-#     """
-#     Placeholder para a função de plano de fundo.
-#     """
-#     return QWidget()
-
-
-# if __name__ == "__main__":
-#     app = QApplication(sys.argv)
-#     window = aba2("background.jpg")
-#     window.show()
-#     sys.exit(app.exec_())
 
 

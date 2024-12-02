@@ -1,5 +1,5 @@
 from imports import *
-from myClasses import aba1, aba2
+from test import aba1, aba2
 
 class MainWindow(QMainWindow):
   def __init__(self):
